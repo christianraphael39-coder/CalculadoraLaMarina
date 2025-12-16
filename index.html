@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <title>Calculadora de Horas (Supabase)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg: #0b0b0b; --panel: #121212; --border: #1e1e1e;
       --text: #e9e9e9; --muted: #9a9a9a;
       --green: #2ecc71; --blue: #3b82f6; --orange: #f59e0b; --red: #ef4444;
+      --gold: #ffd700;
     }
     * { box-sizing: border-box; }
     body { margin:0; background:var(--bg); color:var(--text); font-family: Arial, sans-serif; }
@@ -41,29 +41,32 @@
     .mini-btn.orange { background:var(--orange); color:#0b0b0b; border-color:var(--orange); }
     .mini-btn.red { background:var(--red); color:#0b0b0b; border-color:var(--red); }
 
-    /* Lista de responsáveis */
+    /* Responsáveis */
     .resp-list { display:flex; flex-direction:column; gap:8px; }
     .resp-item { display:flex; align-items:center; justify-content:space-between; background:#151515; border:1px solid var(--border); border-radius:10px; padding:8px 10px; }
+    .resp-item .left { display:flex; align-items:center; gap:8px; }
     .resp-item .name { font-weight:600; }
-    .resp-item .badge { padding:4px 8px; border-radius:999px; border:1px solid var(--border); background:#1a1a1a; font-size:12px; }
-    .resp-item .remove { color:#ef4444; cursor:pointer; font-weight:700; }
+    .resp-item .id { color:var(--muted); font-size:12px; }
+    .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#1a1a1a; border:1px solid var(--border); font-size:12px; }
+    .badge.Dono { background:var(--gold); color:#0b0b0b; font-weight:700; }
+    .badge.Gerente { background:var(--blue); color:#0b0b0b; font-weight:700; }
+    .resp-item .remove { color:var(--red); cursor:pointer; font-weight:700; }
 
     /* Tabela e registros */
     table { width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px; }
     th,td { padding:10px 12px; border-bottom:1px solid var(--border); text-align:left; font-size:14px; }
     thead th { background:#141414; color:var(--muted); }
-    .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#1a1a1a; border:1px solid var(--border); font-size:12px; }
 
     .reg-list { display:flex; flex-direction:column; gap:8px; }
     .reg-item { display:flex; align-items:center; justify-content:space-between; background:#151515; border:1px solid var(--border); border-radius:10px; padding:8px 10px; }
     .reg-item .time { font-weight:600; }
-    .reg-item .remove { color:#ef4444; cursor:pointer; font-weight:700; }
+    .reg-item .remove { color:var(--red); cursor:pointer; font-weight:700; }
 
     .rank { background:#1a1a1a; border:1px solid var(--border); border-radius:10px; padding:10px; margin-top:10px; }
     .rank-item { display:flex; justify-content:space-between; padding:6px 8px; border-radius:8px; background:#151515; border:1px solid var(--border); margin:6px 0; }
     .rank-pos { font-weight:700; }
 
-    .error { color:#ef4444; font-size:13px; margin-top:8px; }
+    .error { color:var(--red); font-size:13px; margin-top:8px; }
     .muted { color:var(--muted); font-size:13px; }
     hr { border:0; border-top:1px solid var(--border); margin:18px 0; }
   </style>
@@ -74,7 +77,6 @@
     <div class="sidebar">
       <h3>Funcionários (<span id="contadorFuncionarios">0</span>)</h3>
       <div id="listaFuncionarios"></div>
-
       <div class="row" style="margin-top:12px;">
         <div class="col"><input id="novoNome" type="text" placeholder="Nome"></div>
         <div class="col"><input id="novoId" type="text" placeholder="ID"></div>
@@ -90,6 +92,7 @@
       <div id="listaResponsaveis" class="resp-list"></div>
       <div class="row" style="margin-top:12px;">
         <div class="col"><input id="novoResponsavelNome" type="text" placeholder="Nome do responsável"></div>
+        <div class="col"><input id="novoResponsavelId" type="text" placeholder="ID do responsável"></div>
         <div class="col">
           <select id="novoResponsavelCargo">
             <option value="Dono">Dono</option>
@@ -170,6 +173,7 @@
 
     const listaResponsaveisEl=document.getElementById("listaResponsaveis");
     const novoResponsavelNomeEl=document.getElementById("novoResponsavelNome");
+    const novoResponsavelIdEl=document.getElementById("novoResponsavelId");
     const novoResponsavelCargoEl=document.getElementById("novoResponsavelCargo");
 
     function showError(msg){
@@ -187,7 +191,6 @@
         listaFuncionariosEl.innerHTML="<p class='muted'>Nenhum funcionário cadastrado.</p>";
         return;
       }
-
       funcionarios.forEach((f,idx)=>{
         const chip=document.createElement("div");
         chip.className="chip"+(funcionarioSelecionado===idx?" selected":"");
@@ -211,6 +214,12 @@
         clearBtn.title="Limpar registros deste funcionário";
         clearBtn.addEventListener("click",(e)=>{e.stopPropagation();limparRegistrosFuncionario(f.id,f.nome);});
 
+        const upBtn=document.createElement("button");
+        upBtn.className="mini-btn orange";
+        upBtn.textContent="Upar p/ Gerente";
+        upBtn.title="Adicionar este funcionário como Gerente";
+        upBtn.addEventListener("click",(e)=>{ e.stopPropagation(); uparParaGerente(f); });
+
         const delBtn=document.createElement("button");
         delBtn.className="mini-btn red";
         delBtn.textContent="Remover";
@@ -218,6 +227,7 @@
 
         actions.appendChild(editBtn);
         actions.appendChild(clearBtn);
+        actions.appendChild(upBtn);
         actions.appendChild(delBtn);
 
         chip.appendChild(label);
@@ -452,16 +462,22 @@
         item.className="resp-item";
 
         const left=document.createElement("div");
+        left.className="left";
+
         const name=document.createElement("span");
         name.className="name";
         name.textContent=r.nome;
 
+        const idspan=document.createElement("span");
+        idspan.className="id";
+        idspan.textContent=`ID: ${r.id_ref ?? "-"}`;
+
         const cargo=document.createElement("span");
-        cargo.className="badge";
+        cargo.className=`badge ${r.cargo}`;
         cargo.textContent=r.cargo;
 
         left.appendChild(name);
-        left.appendChild(document.createTextNode(" "));
+        left.appendChild(idspan);
         left.appendChild(cargo);
 
         const remove=document.createElement("span");
@@ -486,13 +502,18 @@
 
     async function adicionarResponsavel(){
       const nome=(novoResponsavelNomeEl.value||"").trim();
+      const idref=(novoResponsavelIdEl.value||"").trim();
       const cargo=(novoResponsavelCargoEl.value||"").trim();
       if(!nome || !cargo){ alert("Informe nome e cargo!"); return; }
 
-      const { error } = await supabase.from("responsaveis").insert([{ nome, cargo }]);
+      const payload = { nome, cargo };
+      if(idref) payload.id_ref = idref;
+
+      const { error } = await supabase.from("responsaveis").insert([payload]);
       if(error){ alert("Erro ao salvar responsável: " + error.message); return; }
 
       novoResponsavelNomeEl.value="";
+      novoResponsavelIdEl.value="";
       novoResponsavelCargoEl.value="Dono";
       await carregarResponsaveis();
     }
@@ -503,12 +524,29 @@
       await carregarResponsaveis();
     }
 
+    async function uparParaGerente(funcionario){
+      // Evita duplicidade: mesmo id_ref e cargo Gerente
+      const { data: existe, error: errCheck } = await supabase
+        .from("responsaveis")
+        .select("id")
+        .eq("id_ref", funcionario.id)
+        .eq("cargo", "Gerente")
+        .limit(1);
+      if(errCheck){ showError("Falha ao verificar responsáveis."); return; }
+      if(existe && existe.length>0){ alert("Este funcionário já está como Gerente."); return; }
+
+      const { error } = await supabase.from("responsaveis").insert([
+        { nome: funcionario.nome, id_ref: funcionario.id, cargo: "Gerente" }
+      ]);
+      if(error){ alert("Erro ao upar para Gerente: " + error.message); return; }
+      await carregarResponsaveis();
+    }
+
     // Eventos
     document.getElementById("btnAddFuncionario").addEventListener("click", adicionarFuncionario);
     document.getElementById("btnAddRegistro").addEventListener("click", adicionarRegistro);
     document.getElementById("btnOrdenar").addEventListener("click", ordenarTabela);
     document.getElementById("btnLimparTodos").addEventListener("click", limparRegistrosTodos);
-
     document.getElementById("btnAddResponsavel").addEventListener("click", adicionarResponsavel);
 
     // Init
