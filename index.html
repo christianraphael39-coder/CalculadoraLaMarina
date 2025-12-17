@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Calculadora de Horas</title>
+  <title>Login + Calculadora de Horas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- SDK Supabase (inclua apenas uma vez) -->
@@ -31,7 +31,7 @@
     html, body {
       min-height: 100%;
       height: auto;
-      overflow-y: auto;        /* rolagem na página inteira */
+      overflow-y: auto;
       margin:0;
       background:var(--bg);
       color:var(--text);
@@ -39,11 +39,40 @@
     }
     h1,h3 { margin:0 0 12px; }
 
+    /* Tela de Login */
+    #loginScreen {
+      position: fixed; inset: 0;
+      display:flex; justify-content:center; align-items:center;
+      background: rgba(0,0,0,0.75);
+      z-index: 9999;
+    }
+    .login-box {
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:12px;
+      width:320px;
+      padding:20px;
+      text-align:center;
+    }
+    .login-box h2 { margin:0 0 12px; }
+    .login-box input {
+      width:100%; padding:10px; margin:8px 0;
+      border-radius:8px; border:1px solid var(--border);
+      background:#0e0e0e; color:var(--text);
+    }
+    .login-box button {
+      width:100%; padding:10px; margin:8px 0;
+      border-radius:8px; border:none; cursor:pointer;
+      font-weight:600;
+    }
+    .btn-admin { background:var(--green); color:#0b0b0b; }
+    .btn-convidado { background:var(--blue); color:#0b0b0b; }
+
+    /* Layout da calculadora (seu CSS original) */
     .layout { display:flex; flex-direction:column; min-height:100%; }
     .topbar { padding:16px; background:var(--panel); border-bottom:1px solid var(--border); }
     .content { display:flex; flex:1; min-height:0; }
 
-    /* Sidebar mais larga e com rolamento interno */
     .sidebar {
       flex:0 0 500px; width:500px; max-width:100%;
       padding:16px; background:var(--panel); border-right:1px solid var(--border);
@@ -63,7 +92,6 @@
     .btn.blue { background:var(--blue); color:#0b0b0b; }
     .btn.red { background:var(--red); color:#0b0b0b; }
 
-    /* Chips em duas linhas: nome em cima, ID embaixo */
     .chip {
       display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
       padding:10px 14px; border-radius:12px; background:#151515; border:1px solid var(--border); margin:6px 0; font-size:13px;
@@ -80,7 +108,6 @@
     .badge.Dono { background:var(--gold); color:#0b0b0b; font-weight:700; }
     .badge.Gerente { background:var(--blue); color:#0b0b0b; font-weight:700; }
 
-    /* Botões menores nos chips */
     .mini-btn { padding:3px 6px; font-size:11px; border-radius:8px; border:1px solid var(--border); background:#1a1a1a; color:var(--text); cursor:pointer; }
     .mini-btn.orange { background:var(--orange); color:#0b0b0b; border-color:var(--orange); }
     .mini-btn.red { background:var(--red); color:#0b0b0b; border-color:var(--red); }
@@ -94,16 +121,15 @@
     .reg-item .time { font-weight:600; }
     .reg-item .remove { color:var(--red); cursor:pointer; font-weight:700; }
 
-    /* Card de registros com rolagem interna */
     .card.registros {
       display:flex; flex-direction:column;
-      height: 360px;              /* altura fixa do card para forçar rolagem interna */
+      height: 360px;
       overflow:hidden;
     }
     .card.registros h3 { margin-bottom:10px; }
     #registrosArea {
       flex:1 1 auto;
-      overflow-y:auto;            /* rolagem vertical dentro da área */
+      overflow-y:auto;
       padding-right:6px;
     }
 
@@ -129,7 +155,20 @@
   </style>
 </head>
 <body>
-  <div class="layout">
+
+  <!-- Tela de Login -->
+  <div id="loginScreen">
+    <div class="login-box">
+      <h2>Login</h2>
+      <input type="text" id="username" placeholder="Nome de usuário">
+      <input type="password" id="senha" placeholder="Senha">
+      <button class="btn-admin" id="btnLoginAdmin">Entrar como Admin</button>
+      <button class="btn-convidado" id="btnLoginConvidado">Entrar como Convidado</button>
+    </div>
+  </div>
+
+  <!-- App (fica oculto até login) -->
+  <div class="layout" id="appRoot" style="display:none;">
     <!-- Topo: Donos e Gerentes -->
     <div class="topbar">
       <h3>Donos e Gerentes</h3>
@@ -206,18 +245,59 @@
       console.error("Cliente Supabase não inicializado corretamente.");
     }
 
-    // Estado
+    // -------- Login Admin/Convidado --------
+    const ADMIN_USER = "Lamarina";   // altere conforme desejar
+    const ADMIN_PASS = "lm1333246";            // altere conforme desejar
+    let role = null;
+    const isAdmin = ()=> role === "admin";
+
+    function iniciarApp(){
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("appRoot").style.display = "block";
+
+      if(!isAdmin()){
+        // Desabilita ações de escrita (visual)
+        document.querySelectorAll(".btn, .mini-btn").forEach(btn=>{
+          const isWrite =
+            btn.classList.contains("primary") ||
+            btn.classList.contains("red") ||
+            btn.classList.contains("orange");
+          if(isWrite){
+            btn.disabled = true;
+            btn.style.opacity = 0.5;
+            btn.title = (btn.title || "") + " (Indisponível para Convidado)";
+          }
+        });
+      }
+    }
+
+    document.getElementById("btnLoginAdmin").addEventListener("click",()=>{
+      const u = document.getElementById("username").value;
+      const p = document.getElementById("senha").value;
+      if(u === ADMIN_USER && p === ADMIN_PASS){
+        role = "admin";
+        iniciarApp();
+      } else {
+        alert("Usuário ou senha incorretos.");
+      }
+    });
+    document.getElementById("btnLoginConvidado").addEventListener("click",()=>{
+      role = "convidado";
+      iniciarApp();
+    });
+
+    // -------- Estado --------
     let funcionarios = [];
     let pessoas = {};
     let funcionarioSelecionado = null;
     let responsaveis = [];
 
-    // Utils
+    // -------- Utils --------
     const chavePessoa = (nome,id)=>`${nome}::${id}`;
     const toSeconds=(h,m,s)=>(h*3600)+(m*60)+s;
     const fmtHMS=total=>`${Math.floor(total/3600)}h ${Math.floor((total%3600)/60)}m ${total%60}s`;
 
-    // DOM refs
+    // -------- DOM refs --------
     const listaFuncionariosEl=document.getElementById("listaFuncionarios");
     const contadorFuncionariosEl=document.getElementById("contadorFuncionarios");
     const tabelaBodyEl=document.getElementById("tabelaBody");
@@ -265,20 +345,36 @@
 
         const editBtn=document.createElement("button");
         editBtn.className="mini-btn orange"; editBtn.textContent="Editar";
-        editBtn.addEventListener("click",(e)=>{e.stopPropagation();editarFuncionario(idx);});
+        editBtn.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          if(!isAdmin()) return alert("Indisponível para Convidado.");
+          editarFuncionario(idx);
+        });
 
         const clearBtn=document.createElement("button");
         clearBtn.className="mini-btn"; clearBtn.textContent="Limpar"; clearBtn.title="Limpar registros";
-        clearBtn.addEventListener("click",(e)=>{e.stopPropagation();limparRegistrosFuncionario(f.id,f.nome);});
+        clearBtn.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          if(!isAdmin()) return alert("Indisponível para Convidado.");
+          limparRegistrosFuncionario(f.id,f.nome);
+        });
 
         const upBtn=document.createElement("button");
         upBtn.className="mini-btn orange"; upBtn.textContent="Upar";
         upBtn.title="Upar para Gerente";
-        upBtn.addEventListener("click",(e)=>{ e.stopPropagation(); uparParaGerente(f); });
+        upBtn.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          if(!isAdmin()) return alert("Indisponível para Convidado.");
+          uparParaGerente(f);
+        });
 
         const delBtn=document.createElement("button");
         delBtn.className="mini-btn red"; delBtn.textContent="Remover";
-        delBtn.addEventListener("click",(e)=>{e.stopPropagation();removerFuncionario(idx);});
+        delBtn.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          if(!isAdmin()) return alert("Indisponível para Convidado.");
+          removerFuncionario(idx);
+        });
 
         right.appendChild(editBtn);
         right.appendChild(clearBtn);
@@ -350,6 +446,7 @@
         remove.title="Remover registro";
         remove.dataset.id=r.id;
         remove.addEventListener("click", async ()=>{
+          if(!isAdmin()) return alert("Indisponível para Convidado.");
           if(!confirm("Tem certeza que deseja remover este registro?")) return;
           await removerRegistro(r.id);
         });
@@ -383,6 +480,7 @@
         const remove=document.createElement("button");
         remove.className="mini-btn red"; remove.textContent="Remover";
         remove.addEventListener("click", async ()=>{
+          if(!isAdmin()) return alert("Indisponível para Convidado.");
           await removerResponsavel(r.id);
         });
 
@@ -402,6 +500,7 @@
     }
 
     async function adicionarResponsavel(){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       const nome=(novoResponsavelNomeEl.value||"").trim();
       const idref=(novoResponsavelIdEl.value||"").trim();
       const cargo=(novoResponsavelCargoEl.value||"").trim();
@@ -418,12 +517,14 @@
     }
 
     async function removerResponsavel(id){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       const { error } = await db.from("responsaveis").delete().eq("id", id);
       if(error){ alert("Erro ao remover responsável: " + error.message); return; }
       await carregarResponsaveis();
     }
 
     async function uparParaGerente(funcionario){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       const { data: existe, error: errCheck } = await db
         .from("responsaveis").select("id")
         .eq("id_ref", funcionario.id)
@@ -470,6 +571,7 @@
     }
 
     async function adicionarFuncionario(){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       const nome=(novoNomeEl.value||"").trim();
       const id=(novoIdEl.value||"").trim();
       if(!nome || !id){ alert("Informe nome e ID!"); return; }
@@ -487,6 +589,7 @@
     }
 
     async function editarFuncionario(idx){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       const atual = funcionarios[idx];
       const novoNome = prompt("Novo nome:", atual.nome);
       if(novoNome===null) return;
@@ -516,6 +619,7 @@
     }
 
     async function removerFuncionario(idx){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       const f = funcionarios[idx];
       if(!confirm(`Remover ${f.nome} (ID: ${f.id})? Isto apagará seus registros.`)) return;
 
@@ -530,6 +634,7 @@
     }
 
     async function adicionarRegistro(){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       if(funcionarioSelecionado===null){ showError("Selecione um funcionário primeiro!"); return; }
       const h=parseInt(horasEl.value||"0",10);
       const m=parseInt(minutosEl.value||"0",10);
@@ -550,12 +655,14 @@
     }
 
     async function removerRegistro(idRegistro){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       const { error } = await db.from("registros").delete().eq("id", idRegistro);
       if(error){ alert("Erro ao remover registro: " + error.message); return; }
       await carregarRegistros();
     }
 
     async function limparRegistrosFuncionario(funcionarioId, nome){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       if(!confirm(`Deseja limpar TODOS os registros de ${nome} (ID: ${funcionarioId})? Esta ação não pode ser desfeita.`)) return;
       const { error } = await db.from("registros").delete().eq("funcionario_id", funcionarioId);
       if(error){ alert("Erro ao limpar registros: " + error.message); return; }
@@ -563,6 +670,7 @@
     }
 
     async function limparRegistrosTodos(){
+      if(!isAdmin()) return alert("Indisponível para Convidado.");
       if(!confirm("Deseja limpar TODOS os registros de TODOS os funcionários? Esta ação não pode ser desfeita.")) return;
       const { error } = await db.from("registros").delete().neq("id", 0);
       if(error){ alert("Erro ao limpar todos os registros: " + error.message); return; }
@@ -591,12 +699,17 @@
     document.getElementById("btnLimparTodos").addEventListener("click", limparRegistrosTodos);
     document.getElementById("btnAddResponsavel").addEventListener("click", adicionarResponsavel);
 
-    // Init
-    document.addEventListener("DOMContentLoaded", async ()=>{
-      await carregarFuncionarios();
-      await carregarRegistros();
-      await carregarResponsaveis();
+    // Init somente após login (observa quando appRoot fica visível)
+    const observer = new MutationObserver(async ()=>{
+      const visible = document.getElementById("appRoot").style.display !== "none";
+      if(visible){
+        await carregarFuncionarios();
+        await carregarRegistros();
+        await carregarResponsaveis();
+        observer.disconnect();
+      }
     });
+    observer.observe(document.getElementById("appRoot"), { attributes:true, attributeFilter:["style"] });
   </script>
 </body>
 </html>
