@@ -5,17 +5,25 @@
   <title>Calculadora de Horas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- SDK Supabase (uma vez) -->
+  <!-- SDK Supabase (inclua apenas uma vez) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Padrão singleton para evitar redeclaração
-    if (!window.__supabaseClient) {
-      window.__supabaseClient = window.supabase.createClient(
-        "https://pldamguukjeuakrvfbzf.supabase.co",
-        "sb_publishable_UybNTjqz8fdbDLFhxJvO5Q_78P0AM6Y"
-      );
-    }
-    const supabase = window.__supabaseClient;
+    // Singleton do cliente para evitar redeclarações e conflitos
+    (function initSupabase(){
+      const sdkLoaded = !!window.supabase && typeof window.supabase.createClient === "function";
+      if (!sdkLoaded) {
+        console.error("Supabase SDK não carregado.");
+        return;
+      }
+      if (!window.__sb) {
+        window.__sb = window.supabase.createClient(
+          "https://pldamguukjeuakrvfbzf.supabase.co",
+          "sb_publishable_UybNTjqz8fdbDLFhxJvO5Q_78P0AM6Y"
+        );
+      }
+    })();
+    // Use 'db' em todo o código (evita colisão com 'supabase')
+    const db = window.__sb;
   </script>
 
   <style>
@@ -32,8 +40,9 @@
     .topbar { padding:16px; background:var(--panel); border-bottom:1px solid var(--border); }
     .content { display:flex; flex:1; min-height:0; overflow:hidden; }
 
+    /* Sidebar mais larga e com rolamento interno */
     .sidebar {
-      flex:0 0 400px; width:400px; max-width:100%;
+      flex:0 0 480px; width:480px; max-width:100%;
       padding:16px; background:var(--panel); border-right:1px solid var(--border);
       overflow-y:auto; overflow-x:hidden;
     }
@@ -51,22 +60,26 @@
     .btn.blue { background:var(--blue); border-color:var(--blue); color:#0b0b0b; }
     .btn.red { background:var(--red); border-color:var(--red); color:#0b0b0b; }
 
-    /* Chips unificados */
+    /* Chips mais dinâmicos */
     .chip {
-      display:flex; align-items:center; justify-content:space-between; gap:8px;
-      padding:8px 12px; border-radius:999px; background:#151515; border:1px solid var(--border); margin:6px 0; font-size:13px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 14px; border-radius:999px; background:#151515; border:1px solid var(--border); margin:6px 0; font-size:13px;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
     }
     .chip.clickable { cursor:pointer; }
+    .chip:hover { transform:scale(1.02); border-color:#2a2a2a; }
     .chip.selected { background:var(--green); color:#0b0b0b; border-color:var(--green); }
-    .chip .label { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%; }
-    .chip .sub { color:var(--muted); margin-left:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:40%; }
+    .chip .left { display:flex; align-items:center; gap:8px; min-width:0; }
+    .chip .label { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:64%; }
+    .chip .sub { color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:36%; }
     .chip .right { display:flex; align-items:center; gap:6px; }
 
     .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#1a1a1a; border:1px solid var(--border); font-size:12px; }
     .badge.Dono { background:var(--gold); color:#0b0b0b; font-weight:700; }
     .badge.Gerente { background:var(--blue); color:#0b0b0b; font-weight:700; }
 
-    .mini-btn { padding:4px 8px; font-size:11px; border-radius:8px; border:1px solid var(--border); background:#1a1a1a; color:var(--text); cursor:pointer; }
+    /* Botões menores nos chips */
+    .mini-btn { padding:3px 7px; font-size:11px; border-radius:8px; border:1px solid var(--border); background:#1a1a1a; color:var(--text); cursor:pointer; }
     .mini-btn.orange { background:var(--orange); color:#0b0b0b; border-color:var(--orange); }
     .mini-btn.red { background:var(--red); color:#0b0b0b; border-color:var(--red); }
 
@@ -173,6 +186,11 @@
   </div>
 
   <script>
+    // Bloqueia execução se o cliente não estiver pronto
+    if (!db || typeof db.from !== "function") {
+      console.error("Cliente Supabase não inicializado corretamente.");
+    }
+
     // Estado
     let funcionarios = [];
     let pessoas = {};
@@ -220,44 +238,32 @@
       funcionarios.forEach((f,idx)=>{
         const chip=document.createElement("div");
         chip.className="chip clickable"+(funcionarioSelecionado===idx?" selected":"");
+        chip.title=`${f.nome} — ID: ${f.id}`;
         chip.addEventListener("click",()=>selecionarFuncionario(idx));
 
-        const left=document.createElement("div");
-        left.style.display="flex"; left.style.alignItems="center";
+        const left=document.createElement("div"); left.className="left";
+        const label=document.createElement("span"); label.className="label"; label.textContent=f.nome;
+        const sub=document.createElement("span"); sub.className="sub"; sub.textContent=`ID: ${f.id}`;
 
-        const label=document.createElement("span");
-        label.className="label";
-        label.textContent=f.nome;
-
-        const sub=document.createElement("span");
-        sub.className="sub";
-        sub.textContent=`ID: ${f.id}`;
-
-        left.appendChild(label);
-        left.appendChild(sub);
+        left.appendChild(label); left.appendChild(sub);
 
         const right=document.createElement("div"); right.className="right";
 
         const editBtn=document.createElement("button");
-        editBtn.className="mini-btn orange";
-        editBtn.textContent="Editar";
+        editBtn.className="mini-btn orange"; editBtn.textContent="Editar";
         editBtn.addEventListener("click",(e)=>{e.stopPropagation();editarFuncionario(idx);});
 
         const clearBtn=document.createElement("button");
-        clearBtn.className="mini-btn";
-        clearBtn.textContent="Limpar";
-        clearBtn.title="Limpar registros deste funcionário";
+        clearBtn.className="mini-btn"; clearBtn.textContent="Limpar"; clearBtn.title="Limpar registros";
         clearBtn.addEventListener("click",(e)=>{e.stopPropagation();limparRegistrosFuncionario(f.id,f.nome);});
 
         const upBtn=document.createElement("button");
-        upBtn.className="mini-btn orange";
-        upBtn.textContent="Upar p/ Gerente";
-        upBtn.title="Adicionar este funcionário como Gerente";
+        upBtn.className="mini-btn orange"; upBtn.textContent="Upar";
+        upBtn.title="Upar para Gerente";
         upBtn.addEventListener("click",(e)=>{ e.stopPropagation(); uparParaGerente(f); });
 
         const delBtn=document.createElement("button");
-        delBtn.className="mini-btn red";
-        delBtn.textContent="Remover";
+        delBtn.className="mini-btn red"; delBtn.textContent="Remover";
         delBtn.addEventListener("click",(e)=>{e.stopPropagation();removerFuncionario(idx);});
 
         right.appendChild(editBtn);
@@ -350,37 +356,24 @@
       responsaveis.forEach(r=>{
         const chip=document.createElement("div");
         chip.className="chip";
+        chip.title=`${r.nome} — ID: ${r.id_ref ?? "-"}`;
 
-        const left=document.createElement("div");
-        left.style.display="flex"; left.style.alignItems="center";
-
-        const label=document.createElement("span");
-        label.className="label";
-        label.textContent=r.nome;
-
-        const sub=document.createElement("span");
-        sub.className="sub";
-        sub.textContent=`ID: ${r.id_ref ?? "-"}`;
-
-        left.appendChild(label);
-        left.appendChild(sub);
+        const left=document.createElement("div"); left.className="left";
+        const label=document.createElement("span"); label.className="label"; label.textContent=r.nome;
+        const sub=document.createElement("span"); sub.className="sub"; sub.textContent=`ID: ${r.id_ref ?? "-"}`;
+        left.appendChild(label); left.appendChild(sub);
 
         const right=document.createElement("div"); right.className="right";
-
-        const cargo=document.createElement("span");
-        cargo.className=`badge ${r.cargo}`;
-        cargo.textContent=r.cargo;
+        const cargo=document.createElement("span"); cargo.className=`badge ${r.cargo}`; cargo.textContent=r.cargo;
 
         const remove=document.createElement("button");
-        remove.className="mini-btn red";
-        remove.textContent="Remover";
+        remove.className="mini-btn red"; remove.textContent="Remover";
         remove.addEventListener("click", async ()=>{
           await removerResponsavel(r.id);
         });
 
         right.appendChild(cargo);
         right.appendChild(remove);
-
         chip.appendChild(left);
         chip.appendChild(right);
         listaResponsaveisEl.appendChild(chip);
@@ -388,7 +381,7 @@
     }
 
     async function carregarResponsaveis(){
-      const { data, error } = await supabase.from("responsaveis").select("*").order("id",{ascending:true});
+      const { data, error } = await db.from("responsaveis").select("*").order("id",{ascending:true});
       if(error){ console.error(error); showError("Erro ao carregar responsáveis."); responsaveis=[]; }
       else { responsaveis = data || []; }
       renderResponsaveis();
@@ -401,24 +394,21 @@
       if(!nome || !cargo){ alert("Informe nome e cargo!"); return; }
 
       const payload = { nome, cargo, id_ref: idref || null };
-      const { error } = await supabase.from("responsaveis").insert([payload]);
+      const { error } = await db.from("responsaveis").insert([payload]);
       if(error){ alert("Erro ao salvar responsável: " + error.message); return; }
 
-      novoResponsavelNomeEl.value="";
-      novoResponsavelIdEl.value="";
-      novoResponsavelCargoEl.value="Dono";
+      novoResponsavelNomeEl.value=""; novoResponsavelIdEl.value=""; novoResponsavelCargoEl.value="Dono";
       await carregarResponsaveis();
     }
 
     async function removerResponsavel(id){
-      const { error } = await supabase.from("responsaveis").delete().eq("id", id);
+      const { error } = await db.from("responsaveis").delete().eq("id", id);
       if(error){ alert("Erro ao remover responsável: " + error.message); return; }
       await carregarResponsaveis();
     }
 
     async function uparParaGerente(funcionario){
-      // Evita duplicidade: mesmo id_ref e cargo Gerente
-      const { data: existe, error: errCheck } = await supabase
+      const { data: existe, error: errCheck } = await db
         .from("responsaveis").select("id")
         .eq("id_ref", funcionario.id)
         .eq("cargo", "Gerente")
@@ -426,7 +416,7 @@
       if(errCheck){ showError("Falha ao verificar responsáveis."); return; }
       if(existe && existe.length>0){ alert("Este funcionário já está como Gerente."); return; }
 
-      const { error } = await supabase.from("responsaveis").insert([
+      const { error } = await db.from("responsaveis").insert([
         { nome: funcionario.nome, id_ref: funcionario.id, cargo: "Gerente" }
       ]);
       if(error){ alert("Erro ao upar para Gerente: " + error.message); return; }
@@ -435,14 +425,14 @@
 
     // ---------- Registros ----------
     async function carregarFuncionarios(){
-      const { data, error } = await supabase.from("funcionarios").select("*").order("nome",{ascending:true});
+      const { data, error } = await db.from("funcionarios").select("*").order("nome",{ascending:true});
       if(error){ console.error(error); showError("Erro ao carregar funcionários."); return; }
       funcionarios = data || [];
       renderFuncionarios();
     }
 
     async function carregarRegistros(){
-      const { data, error } = await supabase.from("registros").select("*").order("id",{ascending:true});
+      const { data, error } = await db.from("registros").select("*").order("id",{ascending:true});
       if(error){ console.error(error); showError("Erro ao carregar registros."); return; }
       const mapFunc = new Map(funcionarios.map(f=>[f.id,f.nome]));
       pessoas = {};
@@ -468,11 +458,11 @@
       const id=(novoIdEl.value||"").trim();
       if(!nome || !id){ alert("Informe nome e ID!"); return; }
 
-      const { data: existe, error: errCheck } = await supabase.from("funcionarios").select("id").eq("id",id).limit(1);
+      const { data: existe, error: errCheck } = await db.from("funcionarios").select("id").eq("id",id).limit(1);
       if(errCheck){ showError("Falha ao verificar duplicidade."); return; }
       if(existe && existe.length>0){ alert("Já existe um funcionário com este ID."); return; }
 
-      const { error } = await supabase.from("funcionarios").insert([{ id, nome }]);
+      const { error } = await db.from("funcionarios").insert([{ id, nome }]);
       if(error){ alert("Erro ao salvar: " + error.message); return; }
 
       novoNomeEl.value=""; novoIdEl.value="";
@@ -492,16 +482,16 @@
       if(!nNome || !nId){ alert("Nome e ID não podem ficar vazios."); return; }
 
       if(nId !== atual.id){
-        const { data: existe, error: errCheck } = await supabase.from("funcionarios").select("id").eq("id",nId).limit(1);
+        const { data: existe, error: errCheck } = await db.from("funcionarios").select("id").eq("id",nId).limit(1);
         if(errCheck){ showError("Falha ao verificar duplicidade."); return; }
         if(existe && existe.length>0){ alert("Já existe outro funcionário com este ID."); return; }
       }
 
-      const { error: errFunc } = await supabase.from("funcionarios").update({ nome: nNome, id: nId }).eq("id", atual.id);
+      const { error: errFunc } = await db.from("funcionarios").update({ nome: nNome, id: nId }).eq("id", atual.id);
       if(errFunc){ alert("Erro ao atualizar funcionário: " + errFunc.message); return; }
 
       if(nId !== atual.id){
-        const { error: errRegs } = await supabase.from("registros").update({ funcionario_id: nId }).eq("funcionario_id", atual.id);
+        const { error: errRegs } = await db.from("registros").update({ funcionario_id: nId }).eq("funcionario_id", atual.id);
         if(errRegs){ alert("Erro ao migrar registros: " + errRegs.message); return; }
       }
 
@@ -513,7 +503,7 @@
       const f = funcionarios[idx];
       if(!confirm(`Remover ${f.nome} (ID: ${f.id})? Isto apagará seus registros.`)) return;
 
-      const { error } = await supabase.from("funcionarios").delete().eq("id", f.id);
+      const { error } = await db.from("funcionarios").delete().eq("id", f.id);
       if(error){ alert("Erro ao remover funcionário: " + error.message); return; }
 
       if(funcionarioSelecionado===idx) funcionarioSelecionado=null;
@@ -536,7 +526,7 @@
       const f = funcionarios[funcionarioSelecionado];
       const total = toSeconds(h,m,s);
 
-      const { error } = await supabase.from("registros").insert([{ funcionario_id: f.id, horas: h, minutos: m, segundos: s, total }]);
+      const { error } = await db.from("registros").insert([{ funcionario_id: f.id, horas: h, minutos: m, segundos: s, total }]);
       if(error){ showError("Erro ao salvar registro: " + error.message); return; }
 
       horasEl.value=""; minutosEl.value=""; segundosEl.value="";
@@ -544,21 +534,21 @@
     }
 
     async function removerRegistro(idRegistro){
-      const { error } = await supabase.from("registros").delete().eq("id", idRegistro);
+      const { error } = await db.from("registros").delete().eq("id", idRegistro);
       if(error){ alert("Erro ao remover registro: " + error.message); return; }
       await carregarRegistros();
     }
 
     async function limparRegistrosFuncionario(funcionarioId, nome){
       if(!confirm(`Deseja limpar TODOS os registros de ${nome} (ID: ${funcionarioId})? Esta ação não pode ser desfeita.`)) return;
-      const { error } = await supabase.from("registros").delete().eq("funcionario_id", funcionarioId);
+      const { error } = await db.from("registros").delete().eq("funcionario_id", funcionarioId);
       if(error){ alert("Erro ao limpar registros: " + error.message); return; }
       await carregarRegistros();
     }
 
     async function limparRegistrosTodos(){
       if(!confirm("Deseja limpar TODOS os registros de TODOS os funcionários? Esta ação não pode ser desfeita.")) return;
-      const { error } = await supabase.from("registros").delete().neq("id", 0);
+      const { error } = await db.from("registros").delete().neq("id", 0);
       if(error){ alert("Erro ao limpar todos os registros: " + error.message); return; }
       await carregarRegistros();
     }
