@@ -1,715 +1,1188 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Login + Calculadora de Horas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- SDK Supabase (inclua apenas uma vez) -->
+  <meta charset="UTF-8"/>
+  <title>HoraTrack</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    (function initSupabase(){
-      const sdkOk = !!window.supabase && typeof window.supabase.createClient === "function";
-      if (!sdkOk) { console.error("Supabase SDK não carregado."); return; }
-      if (!window.__sb) {
-        window.__sb = window.supabase.createClient(
+    (function(){
+      if(window.supabase&&typeof window.supabase.createClient==="function"){
+        window.__sb=window.supabase.createClient(
           "https://pldamguukjeuakrvfbzf.supabase.co",
           "sb_publishable_UybNTjqz8fdbDLFhxJvO5Q_78P0AM6Y"
         );
       }
     })();
-    const db = window.__sb;
+    const db=window.__sb;
   </script>
-
   <style>
-    :root {
-      --bg:#0b0b0b; --panel:#121212; --border:#1e1e1e;
-      --text:#e9e9e9; --muted:#9a9a9a;
-      --green:#2ecc71; --blue:#3b82f6; --orange:#f59e0b; --red:#ef4444; --gold:#ffd700;
+    :root{
+      --bg:#080a0e;--bg2:#0d1117;--bg3:#141922;
+      --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+      --text:#e8ecf1;--muted:#6b7685;--muted2:#8a95a3;
+      --accent:#4f8fff;--accent2:#3a6fd4;
+      --green:#22c55e;--green2:#16a34a;
+      --red:#ef4444;--orange:#f59e0b;--gold:#fbbf24;
+      --radius:10px;--radius2:14px;
     }
-    * { box-sizing:border-box; }
-    html, body {
-      min-height: 100%;
-      height: auto;
-      overflow-y: auto;
-      margin:0;
-      background:var(--bg);
-      color:var(--text);
-      font-family:Arial,sans-serif;
-    }
-    h1,h3 { margin:0 0 12px; }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100%;overflow-x:hidden;}
 
-    /* Tela de Login */
-    #loginScreen {
-      position: fixed; inset: 0;
-      display:flex; justify-content:center; align-items:center;
-      background: rgba(0,0,0,0.75);
-      z-index: 9999;
-    }
-    .login-box {
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:12px;
-      width:320px;
-      padding:20px;
-      text-align:center;
-    }
-    .login-box h2 { margin:0 0 12px; }
-    .login-box input {
-      width:100%; padding:10px; margin:8px 0;
-      border-radius:8px; border:1px solid var(--border);
-      background:#0e0e0e; color:var(--text);
-    }
-    .login-box button {
-      width:100%; padding:10px; margin:8px 0;
-      border-radius:8px; border:none; cursor:pointer;
-      font-weight:600;
-    }
-    .btn-admin { background:var(--green); color:#0b0b0b; }
-    .btn-convidado { background:var(--blue); color:#0b0b0b; }
+    .toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+    .toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 16px;font-size:13px;font-weight:500;max-width:300px;display:flex;align-items:center;gap:8px;animation:slideIn 0.2s ease;box-shadow:0 4px 20px rgba(0,0,0,0.4);pointer-events:all;}
+    .toast.success{border-color:rgba(34,197,94,0.4);color:var(--green);}
+    .toast.error{border-color:rgba(239,68,68,0.4);color:var(--red);}
+    .toast.info{border-color:rgba(79,143,255,0.3);color:var(--accent);}
+    @keyframes slideIn{from{transform:translateX(20px);opacity:0;}to{transform:none;opacity:1;}}
 
-    /* Layout da calculadora (seu CSS original) */
-    .layout { display:flex; flex-direction:column; min-height:100%; }
-    .topbar { padding:16px; background:var(--panel); border-bottom:1px solid var(--border); }
-    .content { display:flex; flex:1; min-height:0; }
+    .loading-overlay{position:fixed;inset:0;z-index:8000;background:rgba(8,10,14,0.7);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+    .loading-overlay.show{opacity:1;pointer-events:all;}
+    .spinner{width:32px;height:32px;border-radius:50%;border:3px solid var(--border2);border-top-color:var(--accent);animation:spin 0.7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
 
-    .sidebar {
-      flex:0 0 500px; width:500px; max-width:100%;
-      padding:16px; background:var(--panel); border-right:1px solid var(--border);
-      overflow-y:auto; overflow-x:hidden;
-    }
-    .main { flex:1; min-width:0; padding:20px; }
+    .modal-overlay{position:fixed;inset:0;z-index:7000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity 0.2s;}
+    .modal-overlay.open{opacity:1;pointer-events:all;}
+    .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius2);padding:28px 24px 20px;width:340px;max-width:92vw;transform:translateY(12px);transition:transform 0.2s;}
+    .modal-overlay.open .modal-box{transform:translateY(0);}
+    .modal-box h2{font-size:17px;font-weight:600;margin-bottom:6px;}
+    .modal-box .modal-sub{font-size:13px;color:var(--muted2);margin-bottom:18px;}
+    .modal-actions{display:flex;gap:10px;margin-top:20px;}
+    .modal-btn{flex:1;padding:10px;border-radius:var(--radius);border:1px solid var(--border2);cursor:pointer;font-family:inherit;font-size:14px;font-weight:500;transition:all 0.15s;}
+    .modal-btn.cancel{background:transparent;color:var(--muted2);}
+    .modal-btn.cancel:hover{background:var(--bg3);}
+    .modal-btn.confirm{color:#fff;}
+    .modal-btn.confirm.red{background:var(--red);border-color:var(--red);}
+    .modal-btn.confirm.accent{background:var(--accent);border-color:var(--accent);}
+    .edit-field{margin-bottom:12px;}
+    .edit-field label{font-size:12px;color:var(--muted2);display:block;margin-bottom:5px;}
+    .edit-field input{width:100%;padding:9px 12px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:14px;outline:none;transition:border-color 0.15s;}
+    .edit-field input:focus{border-color:var(--accent);}
 
-    .card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:18px; }
-    .row { display:flex; gap:10px; flex-wrap:wrap; }
-    .col { flex:1; min-width:160px; }
+    /* LOGIN */
+    #loginScreen{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px;}
+    .login-wrap{width:100%;max-width:420px;}
+    .login-logo{text-align:center;margin-bottom:28px;}
+    .login-logo .logo-icon{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px;}
+    .login-logo h1{font-size:24px;font-weight:600;}
+    .login-logo p{font-size:13px;color:var(--muted2);margin-top:4px;}
+    .login-tabs{display:flex;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:4px;margin-bottom:16px;}
+    .login-tab{flex:1;padding:9px;border-radius:9px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;background:transparent;color:var(--muted2);transition:all 0.15s;text-align:center;}
+    .login-tab.active{background:var(--bg2);color:var(--text);border:1px solid var(--border2);}
+    .login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:24px;}
+    .login-panel{display:none;}
+    .login-panel.active{display:block;}
+    .field{margin-bottom:12px;}
+    .field label{font-size:11px;color:var(--muted2);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;}
+    .field input{width:100%;padding:11px 13px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:var(--radius);font-family:inherit;font-size:14px;outline:none;transition:border-color 0.15s;}
+    .field input:focus{border-color:var(--accent);}
+    .field input.mono{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;text-align:center;letter-spacing:0.08em;}
+    .btn-login-main{width:100%;padding:12px;border-radius:var(--radius);border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;transition:all 0.15s;margin-top:4px;}
+    .btn-login-main.admin{background:var(--accent);color:#fff;}
+    .btn-login-main.admin:hover{background:var(--accent2);}
+    .btn-login-main.green{background:var(--green);color:#fff;}
+    .btn-login-main.green:hover{background:var(--green2);}
+    .btn-login-main.ghost{background:transparent;color:var(--muted2);border:1px solid var(--border2);margin-top:8px;}
+    .btn-login-main.ghost:hover{background:var(--bg3);color:var(--text);}
+    .btn-login-main:disabled{opacity:0.5;cursor:not-allowed;}
+    .login-err{color:var(--red);font-size:12px;margin-top:8px;text-align:center;min-height:18px;}
 
-    input,select { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#0e0e0e; color:var(--text); }
-    input::placeholder { color:#7a7a7a; }
+    /* TOPBAR */
+    .topbar{padding:0 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;height:54px;flex-shrink:0;position:sticky;top:0;z-index:100;}
+    .topbar-logo{font-size:15px;font-weight:600;}
+    .topbar-logo span{color:var(--accent);}
+    .topbar-nav{display:flex;gap:4px;flex:1;margin:0 16px;}
+    .nav-btn{padding:6px 14px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;background:transparent;color:var(--muted2);transition:all 0.15s;}
+    .nav-btn:hover{background:var(--bg3);color:var(--text);}
+    .nav-btn.active{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+    .topbar-right{display:flex;align-items:center;gap:8px;}
+    .topbar-badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+    .topbar-badge.admin{background:rgba(79,143,255,0.15);color:var(--accent);}
+    .topbar-badge.func{background:rgba(34,197,94,0.15);color:var(--green);}
+    .topbar-badge.guest{background:rgba(107,118,133,0.15);color:var(--muted2);}
+    .btn-logout{padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer;font-family:inherit;font-size:12px;transition:all 0.15s;}
+    .btn-logout:hover{background:var(--bg3);color:var(--text);}
 
-    .btn { padding:10px 14px; border-radius:10px; border:1px solid var(--border); background:#151515; color:var(--text); cursor:pointer; }
-    .btn.primary { background:var(--green); color:#0b0b0b; }
-    .btn.blue { background:var(--blue); color:#0b0b0b; }
-    .btn.red { background:var(--red); color:#0b0b0b; }
+    /* PAGES */
+    #appRoot{display:none;flex-direction:column;min-height:100vh;}
+    .page{display:none;}
+    .page.active{display:block;}
 
-    .chip {
-      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
-      padding:10px 14px; border-radius:12px; background:#151515; border:1px solid var(--border); margin:6px 0; font-size:13px;
-    }
-    .chip.clickable { cursor:pointer; }
-    .chip.selected { background:var(--green); color:#0b0b0b; border-color:var(--green); }
+    /* PONTO */
+    .ponto-body{max-width:600px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:16px;}
+    .status-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:28px 24px;text-align:center;}
+    .status-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;}
+    .status-dot{width:10px;height:10px;border-radius:50%;}
+    .status-dot.idle{background:var(--muted);}
+    .status-dot.working{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
+    .status-dot.paused{background:var(--orange);box-shadow:0 0 8px var(--orange);}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+    .status-label{font-size:13px;color:var(--muted2);font-weight:500;}
+    .clock{font-family:'JetBrains Mono',monospace;font-size:56px;font-weight:600;letter-spacing:0.02em;line-height:1;margin-bottom:6px;}
+    .clock.working{color:var(--green);}
+    .clock.paused{color:var(--orange);}
+    .clock.idle{color:var(--muted);}
+    .clock-sub{font-size:12px;color:var(--muted);margin-bottom:22px;}
+    .pauses-info{display:flex;gap:12px;justify-content:center;margin-bottom:22px;flex-wrap:wrap;}
+    .pause-stat{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 16px;text-align:center;min-width:90px;}
+    .ps-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--orange);}
+    .ps-label{font-size:11px;color:var(--muted);margin-top:2px;}
+    .ponto-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+    .ponto-btn{padding:13px 24px;border-radius:var(--radius);border:none;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;transition:all 0.15s;}
+    .ponto-btn:disabled{opacity:0.3;cursor:not-allowed;}
+    .ponto-btn.iniciar{background:var(--green);color:#fff;}
+    .ponto-btn.iniciar:hover:not(:disabled){background:var(--green2);}
+    .ponto-btn.pausar{background:var(--orange);color:#0b0b0b;}
+    .ponto-btn.retomar{background:var(--accent);color:#fff;}
+    .ponto-btn.retomar:hover:not(:disabled){background:var(--accent2);}
+    .ponto-btn.encerrar{background:var(--red);color:#fff;}
+    .hist-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:16px;}
+    .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+    .card-title{font-size:14px;font-weight:600;}
+    .card-sub{font-size:12px;color:var(--muted2);}
+    .hist-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;}
+    .hist-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
+    .hist-num{width:26px;height:26px;border-radius:7px;background:rgba(79,143,255,0.1);border:1px solid rgba(79,143,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--accent);flex-shrink:0;}
+    .hist-info{flex:1;min-width:0;}
+    .hist-time-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--green);}
+    .hist-detail{font-size:11px;color:var(--muted);margin-top:3px;}
+    .hist-empty{text-align:center;padding:24px;color:var(--muted);font-size:13px;}
+    .day-total-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:8px;margin-top:10px;}
+    .day-total-bar .dtl{font-size:12px;color:var(--muted2);}
+    .day-total-bar .dtv{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--green);}
 
-    .chip .left { display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:0; }
-    .chip .label { font-weight:600; font-size:14px; white-space:normal; word-break:break-word; }
-    .chip .sub { font-size:12px; color:var(--muted); white-space:normal; word-break:break-word; }
-    .chip .right { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
-
-    .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#1a1a1a; border:1px solid var(--border); font-size:12px; }
-    .badge.Dono { background:var(--gold); color:#0b0b0b; font-weight:700; }
-    .badge.Gerente { background:var(--blue); color:#0b0b0b; font-weight:700; }
-
-    .mini-btn { padding:3px 6px; font-size:11px; border-radius:8px; border:1px solid var(--border); background:#1a1a1a; color:var(--text); cursor:pointer; }
-    .mini-btn.orange { background:var(--orange); color:#0b0b0b; border-color:var(--orange); }
-    .mini-btn.red { background:var(--red); color:#0b0b0b; border-color:var(--red); }
-
-    table { width:100%; border-collapse:collapse; border-radius:12px; table-layout:fixed; }
-    th,td { padding:10px 12px; border-bottom:1px solid var(--border); text-align:left; font-size:14px; word-wrap:break-word; }
-    thead th { background:#141414; color:var(--muted); }
-
-    .reg-list { display:flex; flex-direction:column; gap:8px; }
-    .reg-item { display:flex; align-items:center; justify-content:space-between; background:#151515; border:1px solid var(--border); border-radius:10px; padding:8px 10px; }
-    .reg-item .time { font-weight:600; }
-    .reg-item .remove { color:var(--red); cursor:pointer; font-weight:700; }
-
-    .card.registros {
-      display:flex; flex-direction:column;
-      height: 360px;
-      overflow:hidden;
-    }
-    .card.registros h3 { margin-bottom:10px; }
-    #registrosArea {
-      flex:1 1 auto;
-      overflow-y:auto;
-      padding-right:6px;
-    }
-
-    .rank { background:#1a1a1a; border:1px solid var(--border); border-radius:10px; padding:10px; margin-top:10px; }
-    .rank-item { display:flex; justify-content:space-between; padding:6px 8px; border-radius:8px; background:#151515; border:1px solid var(--border); margin:6px 0; }
-    .rank-pos { font-weight:700; }
-
-    .error { color:var(--red); font-size:13px; margin-top:8px; }
-    .muted { color:var(--muted); font-size:13px; }
-
-    @media (max-width: 980px) {
-      .content { flex-direction:column; }
-      .sidebar {
-        width:100%;
-        flex:0 0 auto;
-        border-right:none;
-        border-bottom:1px solid var(--border);
-        max-height:45vh;
-      }
-      .main { flex:1 1 auto; }
-      .card.registros { height: 300px; }
+    /* CALCULADORA */
+    .managers-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 20px;}
+    .managers-bar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    .managers-bar-header h3{font-size:12px;font-weight:600;color:var(--muted2);text-transform:uppercase;letter-spacing:0.05em;}
+    .managers-list{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+    .manager-chip{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:13px;}
+    .cargo-badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;}
+    .cargo-badge.Dono{background:rgba(251,191,36,0.15);color:var(--gold);border:1px solid rgba(251,191,36,0.3);}
+    .cargo-badge.Gerente{background:rgba(79,143,255,0.15);color:var(--accent);border:1px solid rgba(79,143,255,0.3);}
+    .icon-btn{width:20px;height:20px;border-radius:4px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.15s;}
+    .icon-btn:hover{color:var(--red);background:rgba(239,68,68,0.1);}
+    .add-manager-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+    .add-manager-form input,.add-manager-form select{padding:7px 11px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;outline:none;flex:1;min-width:100px;transition:border-color 0.15s;}
+    .add-manager-form input:focus,.add-manager-form select:focus{border-color:var(--accent);}
+    .calc-layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 54px);}
+    .sidebar{width:280px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+    .sidebar-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .sidebar-header h3{font-size:13px;font-weight:600;}
+    .sidebar-count{font-size:11px;background:var(--bg3);border:1px solid var(--border);padding:2px 8px;border-radius:12px;color:var(--muted2);}
+    .sidebar-search{padding:10px 12px;border-bottom:1px solid var(--border);}
+    .sidebar-search input{width:100%;padding:7px 10px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;outline:none;transition:border-color 0.15s;}
+    .sidebar-search input:focus{border-color:var(--accent);}
+    .func-list{flex:1;overflow-y:auto;padding:8px;}
+    .func-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);cursor:pointer;border:1px solid transparent;transition:all 0.15s;margin-bottom:3px;position:relative;}
+    .func-item:hover{background:var(--bg3);border-color:var(--border);}
+    .func-item.selected{background:rgba(79,143,255,0.1);border-color:rgba(79,143,255,0.3);}
+    .func-item.ausente .func-avatar{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:var(--red);}
+    .func-avatar{width:32px;height:32px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;color:var(--accent);}
+    .func-item.selected .func-avatar{background:rgba(79,143,255,0.2);border-color:rgba(79,143,255,0.4);}
+    .func-info{flex:1;min-width:0;}
+    .func-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .func-id{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+    .func-actions{display:flex;gap:3px;opacity:0;transition:opacity 0.15s;}
+    .func-item:hover .func-actions{opacity:1;}
+    .func-act-btn{width:24px;height:24px;border-radius:5px;border:1px solid var(--border);background:var(--bg);color:var(--muted2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all 0.15s;}
+    .func-act-btn:hover{border-color:var(--border2);color:var(--text);}
+    .func-act-btn.red:hover{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:var(--red);}
+    .func-act-btn.orange:hover{background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.3);color:var(--orange);}
+    .func-act-btn.green:hover{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.3);color:var(--green);}
+    .sidebar-add{padding:10px 12px;border-top:1px solid var(--border);}
+    .sidebar-add input{width:100%;padding:7px 10px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;outline:none;margin-bottom:6px;transition:border-color 0.15s;}
+    .sidebar-add input:focus{border-color:var(--accent);}
+    .sidebar-add .row2{display:flex;gap:6px;}
+    .btn-sm{padding:7px 12px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:all 0.15s;white-space:nowrap;}
+    .btn-sm.green{background:var(--green);color:#fff;}
+    .btn-sm.green:hover{background:var(--green2);}
+    .btn-sm.red{background:transparent;color:var(--red);border:1px solid rgba(239,68,68,0.3);}
+    .btn-sm.red:hover{background:rgba(239,68,68,0.1);}
+    .calc-main{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;}
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
+    .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:14px 16px;}
+    .stat-card.alerta{background:rgba(239,68,68,0.05);border-color:rgba(239,68,68,0.3);}
+    .stat-label{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;}
+    .stat-val{font-size:22px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+    .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:16px;}
+    .hour-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+    .hour-field{display:flex;flex-direction:column;gap:5px;}
+    .hour-field label{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:0.04em;}
+    .hour-field input{width:90px;padding:10px 12px;text-align:center;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;outline:none;transition:border-color 0.15s;}
+    .hour-field input:focus{border-color:var(--accent);}
+    .hour-sep{font-size:20px;font-weight:300;color:var(--muted);padding-bottom:10px;}
+    .error-msg{color:var(--red);font-size:12px;margin-top:8px;display:none;}
+    .btn{padding:10px 18px;border-radius:var(--radius);border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;}
+    .btn.green{background:var(--green);color:#fff;}
+    .btn.green:hover:not(:disabled){background:var(--green2);}
+    .btn.ghost{background:transparent;color:var(--muted2);border:1px solid var(--border2);}
+    .btn.ghost:hover:not(:disabled){background:var(--bg3);color:var(--text);}
+    .btn:disabled{opacity:0.45;cursor:not-allowed;}
+    .table-wrap{overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;}
+    thead th{padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);font-weight:500;}
+    tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
+    tbody tr:hover{background:var(--bg3);}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr.row-ausente{background:rgba(239,68,68,0.04);}
+    tbody tr.row-ausente:hover{background:rgba(239,68,68,0.08);}
+    td{padding:10px 12px;font-size:13px;}
+    .td-name{font-weight:500;}
+    .td-id{font-family:'JetBrains Mono',monospace;color:var(--muted2);font-size:12px;}
+    .td-hms{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--accent);}
+    .td-sec{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+    .badge-ausente{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.3);}
+    .badge-ausente .dot{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;animation:blink 1.8s infinite;}
+    .ausente-pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.2);margin-left:5px;vertical-align:middle;}
+    @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.25;}}
+    .rank-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .rank-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;}
+    .rank-card.pos1{border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.05);}
+    .rank-card.pos2{border-color:rgba(156,163,175,0.4);}
+    .rank-card.pos3{border-color:rgba(180,83,9,0.35);}
+    .rank-pos{font-size:22px;margin-bottom:6px;}
+    .rank-name{font-size:13px;font-weight:600;margin-bottom:4px;}
+    .rank-time{font-size:12px;color:var(--accent);font-family:'JetBrains Mono',monospace;}
+    .reg-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+    .reg-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;}
+    .reg-time{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;}
+    .reg-date{font-size:11px;color:var(--muted);margin-top:2px;}
+    .reg-del{background:transparent;border:1px solid transparent;color:var(--muted);cursor:pointer;border-radius:6px;padding:4px 8px;font-size:11px;font-family:inherit;transition:all 0.15s;}
+    .reg-del:hover{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:var(--red);}
+    .empty-state{text-align:center;padding:28px;color:var(--muted);}
+    .empty-icon{font-size:28px;margin-bottom:8px;opacity:0.4;}
+    ::-webkit-scrollbar{width:5px;height:5px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px;}
+    @media(max-width:760px){
+      .calc-layout{flex-direction:column;height:auto;}
+      .sidebar{width:100%;height:auto;max-height:40vh;border-right:none;border-bottom:1px solid var(--border);}
+      .rank-grid{grid-template-columns:1fr;}
+      .hour-form{flex-direction:column;}
+      .hour-field input{width:100%;}
+      .clock{font-size:42px;}
     }
   </style>
 </head>
 <body>
 
-  <!-- Tela de Login -->
-  <div id="loginScreen">
-    <div class="login-box">
-      <h2>Login</h2>
-      <input type="text" id="username" placeholder="Nome de usuário">
-      <input type="password" id="senha" placeholder="Senha">
-      <button class="btn-admin" id="btnLoginAdmin">Entrar como Admin</button>
-      <button class="btn-convidado" id="btnLoginConvidado">Entrar como Convidado</button>
+<div class="toast-wrap" id="toastWrap"></div>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <h2 id="confirmTitle">Confirmar</h2>
+    <p class="modal-sub" id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="confirmCancel">Cancelar</button>
+      <button class="modal-btn confirm red" id="confirmOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <h2>Editar Funcionário</h2>
+    <p class="modal-sub">Registros migrados automaticamente.</p>
+    <div class="edit-field"><label>Nome</label><input id="editNome" type="text"></div>
+    <div class="edit-field"><label>ID</label><input id="editId" type="text"></div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="editCancel">Cancelar</button>
+      <button class="modal-btn confirm accent" id="editOk">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="logo-icon">&#9201;</div>
+      <h1>HoraTrack</h1>
+      <p>Sistema de controle de horas</p>
+    </div>
+    <div class="login-tabs">
+      <button class="login-tab active" id="tabFuncionario" onclick="switchLoginTab('Funcionario')">&#128100; Funcionário</button>
+      <button class="login-tab" id="tabAdmin" onclick="switchLoginTab('Admin')">&#128737; Admin</button>
+      <button class="login-tab" id="tabGuest" onclick="switchLoginTab('Guest')">&#128065; Convidado</button>
+    </div>
+    <div class="login-card">
+      <div class="login-panel active" id="panelFuncionario">
+        <div class="field"><label>Seu ID</label><input type="text" id="funcId" placeholder="001" class="mono" autocomplete="off" maxlength="20"></div>
+        <button class="btn-login-main green" id="btnEntrarFunc">Entrar e bater ponto</button>
+        <div class="login-err" id="errFunc"></div>
+      </div>
+      <div class="login-panel" id="panelAdmin">
+        <div class="field"><label>Usuário</label><input type="text" id="adminUser" placeholder="usuário" autocomplete="username"></div>
+        <div class="field"><label>Senha</label><input type="password" id="adminPass" placeholder="••••••••" autocomplete="current-password"></div>
+        <button class="btn-login-main admin" id="btnEntrarAdmin">Entrar como Admin</button>
+        <div class="login-err" id="errAdmin"></div>
+      </div>
+      <div class="login-panel" id="panelGuest">
+        <p style="font-size:13px;color:var(--muted2);margin-bottom:16px;line-height:1.6;">Acesso somente leitura.</p>
+        <button class="btn-login-main ghost" id="btnEntrarGuest">Entrar como Convidado</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appRoot">
+  <div class="topbar">
+    <div class="topbar-logo">&#9201; <span>HoraTrack</span></div>
+    <nav class="topbar-nav" id="topbarNav"></nav>
+    <div class="topbar-right">
+      <span id="topbarBadge" class="topbar-badge admin">Admin</span>
+      <span id="topbarUser" style="font-size:13px;color:var(--muted2);"></span>
+      <button class="btn-logout" id="btnLogout">Sair</button>
     </div>
   </div>
 
-  <!-- App (fica oculto até login) -->
-  <div class="layout" id="appRoot" style="display:none;">
-    <!-- Topo: Donos e Gerentes -->
-    <div class="topbar">
-      <h3>Donos e Gerentes</h3>
-      <div id="listaResponsaveis"></div>
-      <div class="row" style="margin-top:12px;">
-        <div class="col"><input id="novoResponsavelNome" type="text" placeholder="Nome do responsável"></div>
-        <div class="col"><input id="novoResponsavelId" type="text" placeholder="ID (opcional, vincular ao funcionário)"></div>
-        <div class="col">
-          <select id="novoResponsavelCargo">
-            <option value="Dono">Dono</option>
-            <option value="Gerente">Gerente</option>
-          </select>
+  <!-- PÁGINA PONTO -->
+  <div class="page" id="pagePonto">
+    <div class="ponto-body">
+      <div class="status-card">
+        <div class="status-row">
+          <span class="status-dot idle" id="statusDot"></span>
+          <span class="status-label" id="statusLabel">Sem turno ativo</span>
         </div>
-        <div class="col" style="flex:0 0 auto;">
-          <button class="btn primary" id="btnAddResponsavel">Adicionar responsável</button>
+        <div class="clock idle" id="clock">00:00:00</div>
+        <div class="clock-sub" id="clockSub">Tempo trabalhado</div>
+        <div class="pauses-info" id="pausesInfo" style="display:none;">
+          <div class="pause-stat"><div class="ps-val" id="pauseCount">0</div><div class="ps-label">Pausas</div></div>
+          <div class="pause-stat"><div class="ps-val" id="pauseTime">00:00:00</div><div class="ps-label">Tempo pausado</div></div>
+          <div class="pause-stat"><div class="ps-val" id="netTime">00:00:00</div><div class="ps-label">Tempo líquido</div></div>
+        </div>
+        <div class="ponto-btns">
+          <button class="ponto-btn iniciar"  id="btnIniciar">&#9654; Iniciar</button>
+          <button class="ponto-btn pausar"   id="btnPausar"  disabled>&#9646;&#9646; Pausar</button>
+          <button class="ponto-btn retomar"  id="btnRetomar" disabled style="display:none;">&#9654; Retomar</button>
+          <button class="ponto-btn encerrar" id="btnEncerrar" disabled>&#9646; Encerrar</button>
+        </div>
+      </div>
+      <div class="hist-card">
+        <div class="card-header">
+          <div class="card-title">Registros de hoje</div>
+          <div class="card-sub" id="histDate"></div>
+        </div>
+        <div class="hist-list" id="histList"><div class="hist-empty">Nenhum registro hoje.</div></div>
+        <div id="dayTotalWrap" style="display:none;">
+          <div class="day-total-bar">
+            <span class="dtl">Total do dia</span>
+            <span class="dtv" id="dayTotal">0h 0m 0s</span>
+          </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="content">
-      <!-- Sidebar: Funcionários -->
+  <!-- PÁGINA CALCULADORA -->
+  <div class="page" id="pageCalc">
+    <div class="managers-bar" id="managersBar">
+      <div class="managers-bar-header">
+        <h3>Donos &amp; Gerentes</h3>
+        <span id="managersCount" style="font-size:11px;color:var(--muted);"></span>
+      </div>
+      <div class="managers-list" id="listaResponsaveis"></div>
+      <div class="add-manager-form" id="addManagerForm">
+        <input id="novoResponsavelNome" type="text" placeholder="Nome">
+        <input id="novoResponsavelId" type="text" placeholder="ID (opcional)">
+        <select id="novoResponsavelCargo"><option value="Dono">Dono</option><option value="Gerente">Gerente</option></select>
+        <button class="btn-sm green" id="btnAddResponsavel">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="calc-layout">
       <div class="sidebar">
-        <h3>Funcionários (<span id="contadorFuncionarios">0</span>)</h3>
-        <div id="listaFuncionarios"></div>
-        <div class="row" style="margin-top:12px;">
-          <div class="col"><input id="novoNome" type="text" placeholder="Nome"></div>
-          <div class="col"><input id="novoId" type="text" placeholder="ID"></div>
+        <div class="sidebar-header">
+          <h3>Funcionários</h3>
+          <span class="sidebar-count" id="contadorFuncionarios">0</span>
         </div>
-        <div class="row" style="margin-top:8px;">
-          <div class="col" style="flex:0 0 auto;"><button class="btn primary" id="btnAddFuncionario">Adicionar</button></div>
-          <div class="col" style="flex:0 0 auto;"><button class="btn red" id="btnLimparTodos">Limpar TODOS</button></div>
+        <div class="sidebar-search"><input type="text" id="searchFuncionario" placeholder="&#128269; Buscar..."></div>
+        <div class="func-list" id="listaFuncionarios"></div>
+        <div class="sidebar-add" id="sidebarAdd">
+          <input id="novoNome" type="text" placeholder="Nome do funcionário">
+          <input id="novoId"   type="text" placeholder="ID do funcionário">
+          <div class="row2">
+            <button class="btn-sm green" id="btnAddFuncionario">+ Adicionar</button>
+            <button class="btn-sm red"   id="btnLimparTodos">Limpar todos</button>
+          </div>
         </div>
-        <p class="muted" style="margin-top:8px;">“Editar” altera nome/ID e migra registros. “Limpar” apaga registros do funcionário.</p>
       </div>
-
-      <!-- Main -->
-      <div class="main">
-        <h1>Calculadora de Horas</h1>
-
-        <div class="card">
-          <h3>Adicionar Horas</h3>
-          <div class="row">
-            <div class="col"><input id="horas" type="number" min="0" placeholder="Horas"></div>
-            <div class="col"><input id="minutos" type="number" min="0" max="59" placeholder="Minutos"></div>
-            <div class="col"><input id="segundos" type="number" min="0" max="59" placeholder="Segundos"></div>
-            <div style="align-self:end;"><button class="btn primary" id="btnAddRegistro">Registrar</button></div>
-            <div style="align-self:end;"><button class="btn blue" id="btnOrdenar">Ordenar por total</button></div>
-          </div>
-          <div id="msgErro" class="error" style="display:none;"></div>
+      <div class="calc-main">
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-label">Funcionários</div><div class="stat-val" id="statFuncs">0</div></div>
+          <div class="stat-card"><div class="stat-label">Registros</div><div class="stat-val" id="statRegs">0</div></div>
+          <div class="stat-card"><div class="stat-label">Horas totais equipe</div><div class="stat-val" id="statHours" style="font-size:15px;padding-top:4px;">—</div></div>
+          <div class="stat-card" id="cardAusentes"><div class="stat-label">Sem horas esta semana</div><div class="stat-val" id="statAusentes" style="color:var(--red);">0</div><div style="font-size:11px;color:var(--muted);margin-top:3px;">funcionário(s)</div></div>
+          <div class="stat-card"><div class="stat-label">Selecionado</div><div class="stat-val" id="statSelected" style="font-size:13px;padding-top:6px;color:var(--muted2);">Nenhum</div></div>
         </div>
-
         <div class="card">
-          <h3>Resultados</h3>
-          <table>
-            <thead><tr><th>Nome</th><th>ID</th><th>Total (h:m:s)</th><th>Total (segundos)</th></tr></thead>
-            <tbody id="tabelaBody"></tbody>
-          </table>
-          <div class="rank">
-            <h3>🏆 Ranking Top 3</h3>
-            <div id="rankList"></div>
+          <div class="card-header">
+            <div><div class="card-title">Adicionar Horas</div><div class="card-sub" id="addHoursFor">Selecione um funcionário</div></div>
+          </div>
+          <div class="hour-form">
+            <div class="hour-field"><label>Horas</label><input id="horas" type="number" min="0" placeholder="00"></div>
+            <div class="hour-sep">:</div>
+            <div class="hour-field"><label>Minutos</label><input id="minutos" type="number" min="0" max="59" placeholder="00"></div>
+            <div class="hour-sep">:</div>
+            <div class="hour-field"><label>Segundos</label><input id="segundos" type="number" min="0" max="59" placeholder="00"></div>
+            <button class="btn green" id="btnAddRegistro">Registrar</button>
+            <button class="btn ghost" id="btnOrdenar">&#8597; Ordenar</button>
+          </div>
+          <div id="msgErro" class="error-msg"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Resultados</div>
+            <button class="btn ghost" id="btnExportCSV" style="font-size:12px;padding:6px 12px;">&#8595; Exportar CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>ID</th><th>Total horas</th><th>Segundos</th></tr></thead>
+              <tbody id="tabelaBody"></tbody>
+            </table>
           </div>
         </div>
-
-        <div class="card registros">
-          <h3>Registros do Funcionário Selecionado</h3>
-          <div id="registrosArea" class="reg-list"></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">&#127942; Ranking Top 3</div></div>
+          <div class="rank-grid" id="rankList"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Registros do Funcionário</div>
+            <span class="card-sub" id="regsFuncNome">—</span>
+          </div>
+          <div class="reg-list" id="registrosArea">
+            <div class="empty-state"><div class="empty-icon">&#128203;</div><p>Selecione um funcionário.</p></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <script>
-    if (!db || typeof db.from !== "function") {
-      console.error("Cliente Supabase não inicializado corretamente.");
-    }
+<script>
+const ADMIN_USER = "Lamarina";
+const ADMIN_PASS = "lm1333246";
 
-    // -------- Login Admin/Convidado --------
-    const ADMIN_USER = "Lamarina";   // altere conforme desejar
-    const ADMIN_PASS = "lm1333246";            // altere conforme desejar
-    let role = null;
-    const isAdmin = ()=> role === "admin";
+let role = null, funcionario = null;
+const isAdmin = () => role === "admin";
+const isFunc  = () => role === "func";
 
-    function iniciarApp(){
-      document.getElementById("loginScreen").style.display = "none";
-      document.getElementById("appRoot").style.display = "block";
+let funcionarios = [], pessoas = {}, funcionarioSelecionado = null, responsaveis = [];
+let turno = null, pausas = [], pausaAtual = null, clockInterval = null, turnoInicio = null;
 
-      if(!isAdmin()){
-        // Desabilita ações de escrita (visual)
-        document.querySelectorAll(".btn, .mini-btn").forEach(btn=>{
-          const isWrite =
-            btn.classList.contains("primary") ||
-            btn.classList.contains("red") ||
-            btn.classList.contains("orange");
-          if(isWrite){
-            btn.disabled = true;
-            btn.style.opacity = 0.5;
-            btn.title = (btn.title || "") + " (Indisponível para Convidado)";
-          }
-        });
-      }
-    }
+// UTILS
+const toSec = (h,m,s) => h*3600 + m*60 + s;
+const fmtHMS = t => Math.floor(t/3600)+"h "+Math.floor((t%3600)/60)+"m "+(t%60)+"s";
+const fmtClock = t => {
+  const h=Math.floor(t/3600), m=Math.floor((t%3600)/60), s=t%60;
+  return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+};
+const initials = n => (n||"?").split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+const fmtDate  = iso => { try{ return new Date(iso).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}); }catch{ return ""; } };
+const fmtTime  = iso => { try{ return new Date(iso).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}); }catch{ return ""; } };
+const todayStr = () => new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
+const nowISO   = () => new Date().toISOString();
 
-    document.getElementById("btnLoginAdmin").addEventListener("click",()=>{
-      const u = document.getElementById("username").value;
-      const p = document.getElementById("senha").value;
-      if(u === ADMIN_USER && p === ADMIN_PASS){
-        role = "admin";
-        iniciarApp();
-      } else {
-        alert("Usuário ou senha incorretos.");
-      }
+// TOAST
+function toast(msg, type, dur) {
+  type = type||"info"; dur = dur||3000;
+  const wrap = document.getElementById("toastWrap");
+  const el = document.createElement("div");
+  el.className = "toast "+type;
+  const icons = {success:"✓", error:"✗", info:"ℹ"};
+  el.innerHTML = "<span>"+(icons[type]||"")+"</span><span>"+msg+"</span>";
+  wrap.appendChild(el);
+  setTimeout(function(){ el.style.opacity="0"; el.style.transition="opacity 0.3s"; setTimeout(function(){ el.remove(); },300); }, dur);
+}
+
+// LOADING
+var loadCount = 0;
+function setLoading(on) {
+  loadCount = Math.max(0, loadCount + (on ? 1 : -1));
+  document.getElementById("loadingOverlay").classList.toggle("show", loadCount > 0);
+}
+
+// CONFIRM MODAL
+var confirmResolve = null;
+function showConfirm(title, msg, btnLabel, btnClass) {
+  btnLabel = btnLabel||"Confirmar"; btnClass = btnClass||"red";
+  return new Promise(function(res){
+    confirmResolve = res;
+    document.getElementById("confirmTitle").textContent = title;
+    document.getElementById("confirmMsg").textContent = msg;
+    var ok = document.getElementById("confirmOk");
+    ok.textContent = btnLabel;
+    ok.className = "modal-btn confirm "+btnClass;
+    document.getElementById("confirmModal").classList.add("open");
+  });
+}
+document.getElementById("confirmCancel").onclick = function(){ document.getElementById("confirmModal").classList.remove("open"); if(confirmResolve) confirmResolve(false); };
+document.getElementById("confirmOk").onclick    = function(){ document.getElementById("confirmModal").classList.remove("open"); if(confirmResolve) confirmResolve(true); };
+
+// EDIT MODAL
+var editResolve = null;
+function openEditModal(nome, id) {
+  return new Promise(function(res){
+    editResolve = res;
+    document.getElementById("editNome").value = nome;
+    document.getElementById("editId").value   = id;
+    document.getElementById("editModal").classList.add("open");
+    setTimeout(function(){ document.getElementById("editNome").focus(); }, 100);
+  });
+}
+document.getElementById("editCancel").onclick = function(){ document.getElementById("editModal").classList.remove("open"); if(editResolve) editResolve(null); };
+document.getElementById("editOk").onclick = function(){
+  var n = document.getElementById("editNome").value.trim();
+  var i = document.getElementById("editId").value.trim();
+  if(!n||!i){ toast("Nome e ID obrigatórios.","error"); return; }
+  document.getElementById("editModal").classList.remove("open");
+  if(editResolve) editResolve({nome:n, id:i});
+};
+
+// LOGIN TABS
+function switchLoginTab(tab) {
+  ["Funcionario","Admin","Guest"].forEach(function(t){
+    document.getElementById("tab"+t).classList.toggle("active", t===tab);
+    document.getElementById("panel"+t).classList.toggle("active", t===tab);
+  });
+}
+document.getElementById("btnEntrarFunc").onclick  = loginFunc;
+document.getElementById("funcId").addEventListener("keydown", function(e){ if(e.key==="Enter") loginFunc(); });
+document.getElementById("btnEntrarAdmin").onclick = loginAdmin;
+document.getElementById("adminPass").addEventListener("keydown", function(e){ if(e.key==="Enter") loginAdmin(); });
+document.getElementById("btnEntrarGuest").onclick = function(){ iniciarApp("guest", null); };
+
+async function loginFunc() {
+  var id = (document.getElementById("funcId").value||"").trim();
+  var errEl = document.getElementById("errFunc");
+  errEl.textContent = "";
+  if(!id){ errEl.textContent = "Digite seu ID."; return; }
+  var btn = document.getElementById("btnEntrarFunc");
+  btn.disabled = true; btn.textContent = "Verificando...";
+  try {
+    var res = await db.from("funcionarios").select("*").eq("id", id).limit(1);
+    if(res.error || !res.data || !res.data.length){ errEl.textContent = "ID não encontrado."; return; }
+    iniciarApp("func", res.data[0]);
+  } catch(e){ errEl.textContent = "Erro de conexão."; }
+  finally { btn.disabled = false; btn.textContent = "Entrar e bater ponto"; }
+}
+
+function loginAdmin() {
+  var u = document.getElementById("adminUser").value;
+  var p = document.getElementById("adminPass").value;
+  if(u===ADMIN_USER && p===ADMIN_PASS) iniciarApp("admin", null);
+  else document.getElementById("errAdmin").textContent = "Usuário ou senha incorretos.";
+}
+
+function iniciarApp(r, func) {
+  role = r; funcionario = func;
+  document.getElementById("loginScreen").style.display = "none";
+  var app = document.getElementById("appRoot");
+  app.style.display = "flex";
+  app.style.flexDirection = "column";
+  app.style.minHeight = "100vh";
+
+  var badge = document.getElementById("topbarBadge");
+  var userEl = document.getElementById("topbarUser");
+  if(r==="admin"){ badge.textContent="Admin"; badge.className="topbar-badge admin"; userEl.textContent=""; }
+  else if(r==="func"){ badge.textContent="Funcionário"; badge.className="topbar-badge func"; userEl.textContent=funcionario.nome; }
+  else { badge.textContent="Convidado"; badge.className="topbar-badge guest"; userEl.textContent=""; }
+
+  buildNav(r);
+
+  document.getElementById("addManagerForm").style.display = isAdmin() ? "flex" : "none";
+  document.getElementById("sidebarAdd").style.display     = isAdmin() ? "block" : "none";
+  document.getElementById("managersBar").style.display    = isAdmin() ? "block" : "none";
+
+  if(r==="func") showPage("Ponto");
+  else showPage("Calc");
+
+  carregarTudo();
+  if(r==="func" || r==="admin"){
+    document.getElementById("histDate").textContent = todayStr();
+    if(r==="func") verificarTurnoAberto();
+  }
+}
+
+function buildNav(r) {
+  var nav = document.getElementById("topbarNav");
+  nav.innerHTML = "";
+  if(r==="admin"){
+    [["Ponto","🕐 Ponto"],["Calc","📊 Calculadora"]].forEach(function(item, i){
+      var b = document.createElement("button");
+      b.className = "nav-btn" + (i===1 ? " active" : "");
+      b.textContent = item[1];
+      b.dataset.page = item[0];
+      b.onclick = function(){ showPage(item[0]); };
+      nav.appendChild(b);
     });
-    document.getElementById("btnLoginConvidado").addEventListener("click",()=>{
-      role = "convidado";
-      iniciarApp();
+  } else if(r==="func"){
+    var b = document.createElement("button");
+    b.className = "nav-btn active";
+    b.textContent = "🕐 Ponto";
+    b.dataset.page = "Ponto";
+    b.onclick = function(){ showPage("Ponto"); };
+    nav.appendChild(b);
+  } else {
+    var b2 = document.createElement("button");
+    b2.className = "nav-btn active";
+    b2.textContent = "📊 Calculadora";
+    b2.dataset.page = "Calc";
+    b2.onclick = function(){ showPage("Calc"); };
+    nav.appendChild(b2);
+  }
+}
+
+function showPage(page) {
+  document.querySelectorAll(".page").forEach(function(p){ p.classList.remove("active"); });
+  document.getElementById("page"+page).classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(function(b){
+    b.classList.toggle("active", b.dataset.page === page);
+  });
+}
+
+document.getElementById("btnLogout").onclick = function(){
+  if(turno){ toast("Encerre o turno antes de sair.","error"); return; }
+  clearInterval(clockInterval);
+  role=null; funcionario=null; turno=null; pausas=[]; pausaAtual=null; turnoInicio=null;
+  funcionarioSelecionado=null;
+  document.getElementById("appRoot").style.display="none";
+  document.getElementById("loginScreen").style.display="flex";
+  ["funcId","adminUser","adminPass"].forEach(function(id){ var el=document.getElementById(id); if(el)el.value=""; });
+  ["errFunc","errAdmin"].forEach(function(id){ var el=document.getElementById(id); if(el)el.textContent=""; });
+  resetClock();
+};
+
+// ── PONTO ──
+async function verificarTurnoAberto() {
+  var fid = funcionario ? funcionario.id : null; if(!fid) return;
+  var res = await db.from("pontos").select("*").eq("funcionario_id",fid).is("saida",null).limit(1);
+  if(res.data && res.data.length){
+    turno = res.data[0]; turnoInicio = new Date(turno.entrada);
+    pausas = turno.pausas || [];
+    var abertas = pausas.filter(function(p){ return !p.fim; });
+    if(abertas.length){ pausaAtual = abertas[0].inicio; setEstadoPonto("paused"); }
+    else setEstadoPonto("working");
+    toast("Turno retomado da sessão anterior.","info");
+  }
+}
+
+function iniciarRelogio() {
+  clearInterval(clockInterval);
+  clockInterval = setInterval(atualizarClock, 1000);
+  atualizarClock();
+}
+
+function atualizarClock() {
+  if(!turnoInicio) return;
+  var agora = Date.now();
+  var totalBruto = Math.floor((agora - turnoInicio.getTime()) / 1000);
+  var tempoPausa = 0;
+  pausas.forEach(function(p){
+    var ini = new Date(p.inicio).getTime();
+    var fim = p.fim ? new Date(p.fim).getTime() : agora;
+    tempoPausa += Math.floor((fim - ini) / 1000);
+  });
+  var liquido = Math.max(0, totalBruto - tempoPausa);
+  var clk = document.getElementById("clock");
+  if(pausaAtual){
+    var pi = new Date(pausaAtual).getTime();
+    clk.textContent = fmtClock(Math.floor((agora - pi) / 1000));
+  } else {
+    clk.textContent = fmtClock(liquido);
+  }
+  var pausasN = pausas.filter(function(p){ return p.fim; }).length + (pausaAtual ? 1 : 0);
+  document.getElementById("pauseCount").textContent = pausasN;
+  document.getElementById("pauseTime").textContent  = fmtClock(tempoPausa);
+  document.getElementById("netTime").textContent    = fmtClock(liquido);
+}
+
+function resetClock() {
+  clearInterval(clockInterval);
+  var clk = document.getElementById("clock"); if(clk){ clk.textContent="00:00:00"; clk.className="clock idle"; }
+  var dot = document.getElementById("statusDot"); if(dot) dot.className="status-dot idle";
+  var lbl = document.getElementById("statusLabel"); if(lbl) lbl.textContent="Sem turno ativo";
+  var sub = document.getElementById("clockSub"); if(sub) sub.textContent="Tempo trabalhado";
+  var pi  = document.getElementById("pausesInfo"); if(pi) pi.style.display="none";
+}
+
+function setEstadoPonto(estado) {
+  var dot=document.getElementById("statusDot"), lbl=document.getElementById("statusLabel");
+  var clk=document.getElementById("clock"),     sub=document.getElementById("clockSub");
+  var pi =document.getElementById("pausesInfo");
+  var bI =document.getElementById("btnIniciar"), bP=document.getElementById("btnPausar");
+  var bR =document.getElementById("btnRetomar"), bE=document.getElementById("btnEncerrar");
+  pi.style.display = "flex";
+  if(estado==="working"){
+    dot.className="status-dot working"; lbl.textContent="Turno em andamento";
+    clk.className="clock working"; sub.textContent="Tempo líquido trabalhado";
+    bI.disabled=true; bP.disabled=false; bP.style.display=""; bR.disabled=true; bR.style.display="none"; bE.disabled=false;
+    iniciarRelogio();
+  } else if(estado==="paused"){
+    dot.className="status-dot paused"; lbl.textContent="Em pausa";
+    clk.className="clock paused"; sub.textContent="Tempo nesta pausa";
+    bI.disabled=true; bP.disabled=true; bP.style.display="none"; bR.disabled=false; bR.style.display=""; bE.disabled=true;
+    iniciarRelogio();
+  } else {
+    resetClock();
+    bI.disabled=false; bP.disabled=true; bP.style.display=""; bR.disabled=true; bR.style.display="none"; bE.disabled=true;
+  }
+}
+
+document.getElementById("btnIniciar").onclick = async function(){
+  if(!funcionario) return toast("Nenhum funcionário identificado.","error");
+  document.getElementById("btnIniciar").disabled = true;
+  var entrada = nowISO();
+  turnoInicio = new Date(entrada); pausas = []; pausaAtual = null;
+  var res = await db.from("pontos").insert([{funcionario_id:funcionario.id,entrada:entrada,pausas:[],saida:null,total:null}]).select().single();
+  if(res.error){ toast("Erro ao iniciar: "+res.error.message,"error"); document.getElementById("btnIniciar").disabled=false; return; }
+  turno = res.data;
+  setEstadoPonto("working");
+  toast("Turno iniciado!","success");
+  carregarHistoricoPonto();
+};
+
+document.getElementById("btnPausar").onclick = async function(){
+  if(!turno) return;
+  pausaAtual = nowISO();
+  pausas.push({inicio:pausaAtual, fim:null});
+  var res = await db.from("pontos").update({pausas:pausas}).eq("id",turno.id);
+  if(res.error){ toast("Erro ao pausar.","error"); pausas.pop(); pausaAtual=null; return; }
+  setEstadoPonto("paused");
+  toast("Pausa iniciada.","info");
+};
+
+document.getElementById("btnRetomar").onclick = async function(){
+  if(!turno||!pausaAtual) return;
+  var idx = pausas.findIndex(function(p){ return p.inicio===pausaAtual && !p.fim; });
+  if(idx>=0) pausas[idx].fim = nowISO();
+  pausaAtual = null;
+  var res = await db.from("pontos").update({pausas:pausas}).eq("id",turno.id);
+  if(res.error){ toast("Erro ao retomar.","error"); return; }
+  setEstadoPonto("working");
+  toast("Turno retomado!","success");
+};
+
+document.getElementById("btnEncerrar").onclick = async function(){
+  if(!turno) return;
+  var ok = await showConfirm("Encerrar turno","Encerrar o turno agora?","Encerrar","red");
+  if(!ok) return;
+  var saida = nowISO();
+  var agora = Date.now();
+  var totalBruto = Math.floor((agora - turnoInicio.getTime()) / 1000);
+  var tempoPausa = 0;
+  pausas.forEach(function(p){
+    var ini=new Date(p.inicio).getTime(), fim=p.fim?new Date(p.fim).getTime():agora;
+    tempoPausa += Math.floor((fim-ini)/1000);
+  });
+  var total = Math.max(0, totalBruto - tempoPausa);
+  var h=Math.floor(total/3600), m=Math.floor((total%3600)/60), s=total%60;
+  setLoading(true);
+  try{
+    var r1 = await db.from("pontos").update({saida:saida,total:total,pausas:pausas}).eq("id",turno.id);
+    if(r1.error){ toast("Erro ao encerrar.","error"); return; }
+    var r2 = await db.from("registros").insert([{funcionario_id:funcionario.id,horas:h,minutos:m,segundos:s,total:total}]);
+    if(r2.error) toast("Aviso: horas não salvas na calculadora.","error");
+    clearInterval(clockInterval);
+    turno=null; pausas=[]; pausaAtual=null; turnoInicio=null;
+    setEstadoPonto("idle");
+    toast("Encerrado! "+fmtHMS(total)+" registrados ✓","success",5000);
+    carregarHistoricoPonto();
+    await carregarRegistros();
+  } finally { setLoading(false); }
+};
+
+async function carregarHistoricoPonto() {
+  if(!funcionario) return;
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var amanha = new Date(hoje); amanha.setDate(amanha.getDate()+1);
+  var res = await db.from("pontos").select("*")
+    .eq("funcionario_id",funcionario.id)
+    .gte("entrada",hoje.toISOString())
+    .lt("entrada",amanha.toISOString())
+    .order("entrada",{ascending:true});
+  var listEl = document.getElementById("histList");
+  var dayWrap = document.getElementById("dayTotalWrap");
+  listEl.innerHTML = "";
+  if(res.error || !res.data || !res.data.length){
+    listEl.innerHTML = "<div class='hist-empty'>Nenhum registro hoje.</div>";
+    dayWrap.style.display = "none"; return;
+  }
+  var totalDia = 0;
+  res.data.forEach(function(p, i){
+    var item = document.createElement("div"); item.className = "hist-item";
+    var dur = p.total ? fmtHMS(p.total) : (p.saida ? "—" : "em andamento");
+    var pc  = (p.pausas||[]).filter(function(x){ return x.fim; }).length;
+    var ativo = !p.saida ? "<span style='color:var(--green);font-size:11px;margin-left:5px;'>● ativo</span>" : "";
+    item.innerHTML = "<div class='hist-num'>"+(i+1)+"</div><div class='hist-info'><div class='hist-time-val'>"+dur+ativo+"</div><div class='hist-detail'>Entrada: "+fmtTime(p.entrada)+(p.saida?" → Saída: "+fmtTime(p.saida):"")+(pc?" · "+pc+" pausa(s)":"")+"</div></div>"+(p.total?"<div style='font-family:JetBrains Mono,monospace;font-size:12px;font-weight:600;color:var(--accent);flex-shrink:0;'>"+p.total+"s</div>":"");
+    listEl.appendChild(item);
+    if(p.total) totalDia += p.total;
+  });
+  if(totalDia>0){ document.getElementById("dayTotal").textContent=fmtHMS(totalDia); dayWrap.style.display="block"; }
+  else dayWrap.style.display="none";
+}
+
+// ── CALCULADORA ──
+function showError(msg){
+  var el=document.getElementById("msgErro"); el.textContent=msg; el.style.display="block";
+  setTimeout(function(){ el.style.display="none"; },4000);
+}
+
+function renderFuncionarios() {
+  var el = document.getElementById("listaFuncionarios");
+  var search = (document.getElementById("searchFuncionario").value||"").toLowerCase();
+  document.getElementById("contadorFuncionarios").textContent = funcionarios.length;
+  document.getElementById("statFuncs").textContent = funcionarios.length;
+  el.innerHTML = "";
+  var filtered = funcionarios.filter(function(f){
+    return f.nome.toLowerCase().includes(search) || f.id.toLowerCase().includes(search);
+  });
+  if(!filtered.length){
+    el.innerHTML = "<div class='empty-state'><div class='empty-icon'>👤</div><p>"+(search?"Sem resultados.":"Nenhum funcionário.")+"</p></div>";
+    return;
+  }
+  filtered.forEach(function(f){
+    var idx = funcionarios.indexOf(f);
+    var chave = f.nome+"::"+f.id;
+    var pessoaF = pessoas[chave];
+    var ausente = !pessoaF || pessoaF.total <= 1;
+
+    var item = document.createElement("div");
+    item.className = "func-item" + (funcionarioSelecionado===idx ? " selected" : "") + (ausente ? " ausente" : "");
+    item.onclick = function(){ selecionarFuncionario(idx); };
+
+    var avatarDiv = "<div class='func-avatar'>"+initials(f.nome)+"</div>";
+    var ausentePill = ausente ? "<span class='ausente-pill'>⚠ ausente</span>" : "";
+    var infoDiv = "<div class='func-info'><div class='func-name'>"+f.nome+ausentePill+"</div><div class='func-id'>#"+f.id+"</div></div>";
+    var actionsDiv = "";
+    if(isAdmin()){
+      actionsDiv = "<div class='func-actions'>"
+        +"<button class='func-act-btn orange' title='Editar' onclick='event.stopPropagation();editarFuncionario("+idx+")'>✎</button>"
+        +"<button class='func-act-btn green' title='Upar a Gerente' onclick='event.stopPropagation();uparParaGerente(funcionarios["+idx+"])'>↑</button>"
+        +"<button class='func-act-btn' title='Limpar registros' onclick='event.stopPropagation();limparRegistrosFuncionario(\""+f.id+"\",\""+f.nome+"\")'>🗑</button>"
+        +"<button class='func-act-btn red' title='Remover' onclick='event.stopPropagation();removerFuncionario("+idx+")'>✕</button>"
+        +"</div>";
+    }
+    item.innerHTML = avatarDiv + infoDiv + actionsDiv;
+    el.appendChild(item);
+  });
+}
+
+function renderTabela(lista) {
+  var body = document.getElementById("tabelaBody");
+  var dados = lista || Object.values(pessoas);
+  var totalSec  = dados.reduce(function(a,p){ return a+p.total; }, 0);
+  var totalRegs = dados.reduce(function(a,p){ return a+p.registros.length; }, 0);
+  var ausentesCount = dados.filter(function(p){ return p.total <= 1; }).length;
+
+  document.getElementById("statHours").textContent = fmtHMS(totalSec);
+  document.getElementById("statRegs").textContent  = totalRegs;
+  document.getElementById("statAusentes").textContent = ausentesCount;
+  var cardAus = document.getElementById("cardAusentes");
+  if(cardAus) cardAus.classList.toggle("alerta", ausentesCount > 0);
+
+  body.innerHTML = "";
+  if(!dados.length){
+    body.innerHTML = "<tr><td colspan='4'><div class='empty-state'><div class='empty-icon'>📊</div><p>Sem registros.</p></div></td></tr>";
+  } else {
+    dados.forEach(function(p){
+      var ausente = p.total <= 1;
+      var tr = document.createElement("tr");
+      if(ausente) tr.className = "row-ausente";
+      var tdHms = ausente
+        ? "<span class='badge-ausente'><span class='dot'></span>Não trabalhou esta semana</span>"
+        : "<span class='td-hms'>"+fmtHMS(p.total)+"</span>";
+      var tdSec = ausente ? "—" : p.total+"s";
+      tr.innerHTML = "<td class='td-name'>"+p.nome+(ausente?" ⚠":"")+"</td><td class='td-id'>"+p.id+"</td><td>"+tdHms+"</td><td class='td-sec'>"+tdSec+"</td>";
+      body.appendChild(tr);
     });
+  }
+  renderRanking(dados);
+  renderRegistrosSelecionado();
+}
 
-    // -------- Estado --------
-    let funcionarios = [];
-    let pessoas = {};
-    let funcionarioSelecionado = null;
-    let responsaveis = [];
+function renderRanking(dados) {
+  var el = document.getElementById("rankList");
+  var top = dados.slice().sort(function(a,b){ return b.total-a.total; }).filter(function(p){ return p.total > 1; }).slice(0,3);
+  el.innerHTML = "";
+  if(!top.length){ el.innerHTML="<div class='empty-state'><p>Sem dados.</p></div>"; return; }
+  var medals=["🥇","🥈","🥉"], cls=["pos1","pos2","pos3"];
+  top.forEach(function(p,i){
+    var c = document.createElement("div"); c.className="rank-card "+cls[i];
+    c.innerHTML = "<div class='rank-pos'>"+medals[i]+"</div><div class='rank-name'>"+p.nome+"</div><div class='rank-time'>"+fmtHMS(p.total)+"</div>";
+    el.appendChild(c);
+  });
+}
 
-    // -------- Utils --------
-    const chavePessoa = (nome,id)=>`${nome}::${id}`;
-    const toSeconds=(h,m,s)=>(h*3600)+(m*60)+s;
-    const fmtHMS=total=>`${Math.floor(total/3600)}h ${Math.floor((total%3600)/60)}m ${total%60}s`;
+function renderRegistrosSelecionado() {
+  var area  = document.getElementById("registrosArea");
+  var nameEl= document.getElementById("regsFuncNome");
+  var selEl = document.getElementById("statSelected");
+  if(funcionarioSelecionado===null){
+    nameEl.textContent="—"; selEl.textContent="Nenhum"; selEl.style.color="var(--muted2)";
+    area.innerHTML="<div class='empty-state'><div class='empty-icon'>📋</div><p>Selecione um funcionário.</p></div>"; return;
+  }
+  var f = funcionarios[funcionarioSelecionado];
+  nameEl.textContent=f.nome; selEl.textContent=f.nome; selEl.style.color="var(--text)";
+  document.getElementById("addHoursFor").textContent="Para: "+f.nome+" (ID: "+f.id+")";
+  var chave = f.nome+"::"+f.id;
+  var pessoa = pessoas[chave];
+  area.innerHTML = "";
+  if(!pessoa||!pessoa.registros.length){
+    area.innerHTML="<div class='empty-state'><div class='empty-icon'>📋</div><p>Sem registros para "+f.nome+".</p></div>"; return;
+  }
+  pessoa.registros.slice().reverse().forEach(function(r){
+    var item = document.createElement("div"); item.className="reg-item";
+    item.innerHTML = "<div><div class='reg-time'>"+r.h+"h "+r.m+"m "+r.s+"s</div>"+(r.created_at?"<div class='reg-date'>"+fmtDate(r.created_at)+"</div>":"")+"</div>"+(isAdmin()?"<button class='reg-del' onclick='removerRegistro("+r.id+")'>Remover</button>":"");
+    area.appendChild(item);
+  });
+}
 
-    // -------- DOM refs --------
-    const listaFuncionariosEl=document.getElementById("listaFuncionarios");
-    const contadorFuncionariosEl=document.getElementById("contadorFuncionarios");
-    const tabelaBodyEl=document.getElementById("tabelaBody");
-    const registrosArea=document.getElementById("registrosArea");
-    const rankList=document.getElementById("rankList");
-    const novoNomeEl=document.getElementById("novoNome");
-    const novoIdEl=document.getElementById("novoId");
-    const horasEl=document.getElementById("horas");
-    const minutosEl=document.getElementById("minutos");
-    const segundosEl=document.getElementById("segundos");
-    const msgErroEl=document.getElementById("msgErro");
+function renderResponsaveis() {
+  var el = document.getElementById("listaResponsaveis");
+  document.getElementById("managersCount").textContent = responsaveis.length+" responsável(is)";
+  el.innerHTML = "";
+  if(!responsaveis.length){ el.innerHTML="<span style='font-size:13px;color:var(--muted)'>Nenhum cadastrado.</span>"; return; }
+  responsaveis.forEach(function(r){
+    var chip = document.createElement("div"); chip.className="manager-chip";
+    chip.innerHTML = "<span>"+r.nome+"</span><span class='cargo-badge "+r.cargo+"'>"+r.cargo+"</span>"+(r.id_ref?"<span style='font-size:11px;color:var(--muted);font-family:JetBrains Mono,monospace'>#"+r.id_ref+"</span>":"")+(isAdmin()?"<button class='icon-btn' onclick='removerResponsavel("+r.id+")'>✕</button>":"");
+    el.appendChild(chip);
+  });
+}
 
-    const listaResponsaveisEl=document.getElementById("listaResponsaveis");
-    const novoResponsavelNomeEl=document.getElementById("novoResponsavelNome");
-    const novoResponsavelIdEl=document.getElementById("novoResponsavelId");
-    const novoResponsavelCargoEl=document.getElementById("novoResponsavelCargo");
+// CRUD
+async function carregarTudo(){
+  setLoading(true);
+  try{ await Promise.all([carregarFuncionarios(), carregarResponsaveis()]); await carregarRegistros(); }
+  finally{ setLoading(false); }
+}
 
-    function showError(msg){
-      msgErroEl.textContent=msg;
-      msgErroEl.style.display="block";
-      setTimeout(()=>{msgErroEl.style.display="none";},3500);
+async function carregarFuncionarios(){
+  var res = await db.from("funcionarios").select("*").order("nome",{ascending:true});
+  if(res.error){ toast("Erro ao carregar funcionários.","error"); return; }
+  funcionarios = res.data || [];
+  renderFuncionarios();
+}
+
+async function carregarRegistros(){
+  var res = await db.from("registros").select("*").order("id",{ascending:true});
+  if(res.error){ toast("Erro ao carregar registros.","error"); return; }
+  var mapFunc = new Map(funcionarios.map(function(f){ return [f.id, f.nome]; }));
+  pessoas = {};
+  (res.data||[]).forEach(function(r){
+    var nome = mapFunc.get(r.funcionario_id)||"(Desconhecido)";
+    var id   = r.funcionario_id;
+    var chave = nome+"::"+id;
+    if(!pessoas[chave]) pessoas[chave] = {nome:nome, id:id, total:0, registros:[]};
+    pessoas[chave].total += r.total;
+    pessoas[chave].registros.push({id:r.id,h:r.horas,m:r.minutos,s:r.segundos,total:r.total,created_at:r.created_at});
+  });
+  // Garante que funcionários sem registros também apareçam (com total 0)
+  funcionarios.forEach(function(f){
+    var chave = f.nome+"::"+f.id;
+    if(!pessoas[chave]) pessoas[chave] = {nome:f.nome, id:f.id, total:0, registros:[]};
+  });
+  renderFuncionarios();
+  renderTabela();
+}
+
+async function carregarResponsaveis(){
+  var res = await db.from("responsaveis").select("*").order("id",{ascending:true});
+  if(res.error){ toast("Erro ao carregar responsáveis.","error"); responsaveis=[]; }
+  else responsaveis = res.data || [];
+  renderResponsaveis();
+}
+
+function selecionarFuncionario(idx){
+  funcionarioSelecionado = idx;
+  document.getElementById("addHoursFor").textContent = "Para: "+funcionarios[idx].nome+" (ID: "+funcionarios[idx].id+")";
+  renderFuncionarios();
+  renderRegistrosSelecionado();
+}
+
+async function adicionarFuncionario(){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var nome=(document.getElementById("novoNome").value||"").trim();
+  var id  =(document.getElementById("novoId").value||"").trim();
+  if(!nome||!id) return toast("Informe nome e ID!","error");
+  setLoading(true);
+  try{
+    var chk = await db.from("funcionarios").select("id").eq("id",id).limit(1);
+    if(chk.data&&chk.data.length){ toast("ID já cadastrado.","error"); return; }
+    var res = await db.from("funcionarios").insert([{id:id,nome:nome}]);
+    if(res.error){ toast("Erro: "+res.error.message,"error"); return; }
+    document.getElementById("novoNome").value=""; document.getElementById("novoId").value="";
+    toast(nome+" adicionado!","success");
+    await carregarFuncionarios(); await carregarRegistros();
+  } finally{ setLoading(false); }
+}
+
+async function editarFuncionario(idx){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var atual = funcionarios[idx];
+  var result = await openEditModal(atual.nome, atual.id);
+  if(!result) return;
+  setLoading(true);
+  try{
+    if(result.id!==atual.id){
+      var chk = await db.from("funcionarios").select("id").eq("id",result.id).limit(1);
+      if(chk.data&&chk.data.length){ toast("ID já existe.","error"); return; }
     }
+    var r1 = await db.from("funcionarios").update({nome:result.nome,id:result.id}).eq("id",atual.id);
+    if(r1.error){ toast("Erro: "+r1.error.message,"error"); return; }
+    if(result.id!==atual.id) await db.from("registros").update({funcionario_id:result.id}).eq("funcionario_id",atual.id);
+    toast("Atualizado!","success");
+    if(funcionarioSelecionado===idx) funcionarioSelecionado=null;
+    await carregarFuncionarios(); await carregarRegistros();
+  } finally{ setLoading(false); }
+}
 
-    // ---------- Funcionários ----------
-    function renderFuncionarios(){
-      listaFuncionariosEl.innerHTML="";
-      contadorFuncionariosEl.textContent = funcionarios.length;
+async function removerFuncionario(idx){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var f = funcionarios[idx];
+  var ok = await showConfirm("Remover funcionário","Remover "+f.nome+"? Todos os registros serão apagados.");
+  if(!ok) return;
+  setLoading(true);
+  try{
+    var res = await db.from("funcionarios").delete().eq("id",f.id);
+    if(res.error){ toast("Erro: "+res.error.message,"error"); return; }
+    if(funcionarioSelecionado===idx) funcionarioSelecionado=null;
+    else if(typeof funcionarioSelecionado==="number"&&funcionarioSelecionado>idx) funcionarioSelecionado--;
+    toast(f.nome+" removido.","success");
+    await carregarFuncionarios(); await carregarRegistros();
+  } finally{ setLoading(false); }
+}
 
-      if(funcionarios.length===0){
-        listaFuncionariosEl.innerHTML="<p class='muted'>Nenhum funcionário cadastrado.</p>";
-        return;
-      }
-      funcionarios.forEach((f,idx)=>{
-        const chip=document.createElement("div");
-        chip.className="chip clickable"+(funcionarioSelecionado===idx?" selected":"");
-        chip.title=`${f.nome} — ID: ${f.id}`;
-        chip.addEventListener("click",()=>selecionarFuncionario(idx));
+async function limparRegistrosFuncionario(funcionarioId, nome){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var ok = await showConfirm("Limpar registros","Limpar TODOS os registros de "+nome+"? Ação irreversível.");
+  if(!ok) return;
+  setLoading(true);
+  try{
+    var res = await db.from("registros").delete().eq("funcionario_id",funcionarioId);
+    if(res.error){ toast("Erro: "+res.error.message,"error"); return; }
+    toast("Registros de "+nome+" limpos.","success");
+    await carregarRegistros();
+  } finally{ setLoading(false); }
+}
 
-        const left=document.createElement("div"); left.className="left";
-        const label=document.createElement("span"); label.className="label"; label.textContent=f.nome;
-        const sub=document.createElement("span"); sub.className="sub"; sub.textContent=`ID: ${f.id}`;
-        left.appendChild(label); left.appendChild(sub);
+async function limparRegistrosTodos(){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var ok = await showConfirm("Limpar TODOS","Apagar registros de todos? Ação irreversível!");
+  if(!ok) return;
+  setLoading(true);
+  try{
+    var res = await db.from("registros").delete().gt("id",0);
+    if(res.error){ toast("Erro: "+res.error.message,"error"); return; }
+    toast("Todos os registros apagados.","info");
+    await carregarRegistros();
+  } finally{ setLoading(false); }
+}
 
-        const right=document.createElement("div"); right.className="right";
+async function adicionarRegistro(){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  if(funcionarioSelecionado===null){ showError("Selecione um funcionário!"); return; }
+  var h=parseInt(document.getElementById("horas").value||"0",10);
+  var m=parseInt(document.getElementById("minutos").value||"0",10);
+  var s=parseInt(document.getElementById("segundos").value||"0",10);
+  if(h===0&&m===0&&s===0){ showError("Tempo zerado não permitido."); return; }
+  if([h,m,s].some(function(v){ return isNaN(v)||v<0; })){ showError("Valores inválidos."); return; }
+  if(m>59||s>59){ showError("Min/Seg devem ser 0–59."); return; }
+  var f = funcionarios[funcionarioSelecionado];
+  setLoading(true);
+  try{
+    var res = await db.from("registros").insert([{funcionario_id:f.id,horas:h,minutos:m,segundos:s,total:toSec(h,m,s)}]);
+    if(res.error){ showError("Erro: "+res.error.message); return; }
+    document.getElementById("horas").value=""; document.getElementById("minutos").value=""; document.getElementById("segundos").value="";
+    toast("Registro adicionado para "+f.nome+"!","success");
+    await carregarRegistros();
+  } finally{ setLoading(false); }
+}
 
-        const editBtn=document.createElement("button");
-        editBtn.className="mini-btn orange"; editBtn.textContent="Editar";
-        editBtn.addEventListener("click",(e)=>{
-          e.stopPropagation();
-          if(!isAdmin()) return alert("Indisponível para Convidado.");
-          editarFuncionario(idx);
-        });
+async function removerRegistro(idReg){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var ok = await showConfirm("Remover registro","Remover este registro de horas?");
+  if(!ok) return;
+  setLoading(true);
+  try{
+    var res = await db.from("registros").delete().eq("id",idReg);
+    if(res.error){ toast("Erro: "+res.error.message,"error"); return; }
+    toast("Registro removido.","info");
+    await carregarRegistros();
+  } finally{ setLoading(false); }
+}
 
-        const clearBtn=document.createElement("button");
-        clearBtn.className="mini-btn"; clearBtn.textContent="Limpar"; clearBtn.title="Limpar registros";
-        clearBtn.addEventListener("click",(e)=>{
-          e.stopPropagation();
-          if(!isAdmin()) return alert("Indisponível para Convidado.");
-          limparRegistrosFuncionario(f.id,f.nome);
-        });
+async function adicionarResponsavel(){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var nome  = (document.getElementById("novoResponsavelNome").value||"").trim();
+  var idref = (document.getElementById("novoResponsavelId").value||"").trim();
+  var cargo = document.getElementById("novoResponsavelCargo").value;
+  if(!nome){ toast("Informe o nome!","error"); return; }
+  setLoading(true);
+  try{
+    var res = await db.from("responsaveis").insert([{nome:nome,cargo:cargo,id_ref:idref||null}]);
+    if(res.error){ toast("Erro: "+res.error.message,"error"); return; }
+    document.getElementById("novoResponsavelNome").value=""; document.getElementById("novoResponsavelId").value="";
+    toast(nome+" adicionado como "+cargo+"!","success");
+    await carregarResponsaveis();
+  } finally{ setLoading(false); }
+}
 
-        const upBtn=document.createElement("button");
-        upBtn.className="mini-btn orange"; upBtn.textContent="Upar";
-        upBtn.title="Upar para Gerente";
-        upBtn.addEventListener("click",(e)=>{
-          e.stopPropagation();
-          if(!isAdmin()) return alert("Indisponível para Convidado.");
-          uparParaGerente(f);
-        });
+async function removerResponsavel(id){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var ok = await showConfirm("Remover responsável","Remover este responsável?");
+  if(!ok) return;
+  setLoading(true);
+  try{
+    var res = await db.from("responsaveis").delete().eq("id",id);
+    if(res.error){ toast("Erro: "+res.error.message,"error"); return; }
+    toast("Removido.","info");
+    await carregarResponsaveis();
+  } finally{ setLoading(false); }
+}
 
-        const delBtn=document.createElement("button");
-        delBtn.className="mini-btn red"; delBtn.textContent="Remover";
-        delBtn.addEventListener("click",(e)=>{
-          e.stopPropagation();
-          if(!isAdmin()) return alert("Indisponível para Convidado.");
-          removerFuncionario(idx);
-        });
+async function uparParaGerente(f){
+  if(!isAdmin()) return toast("Indisponível.","error");
+  var chk = await db.from("responsaveis").select("id").eq("id_ref",f.id).eq("cargo","Gerente").limit(1);
+  if(chk.data&&chk.data.length){ toast("Já é Gerente.","error"); return; }
+  setLoading(true);
+  try{
+    var res = await db.from("responsaveis").insert([{nome:f.nome,id_ref:f.id,cargo:"Gerente"}]);
+    if(res.error){ toast("Erro: "+res.error.message,"error"); return; }
+    toast(f.nome+" promovido a Gerente!","success");
+    await carregarResponsaveis();
+  } finally{ setLoading(false); }
+}
 
-        right.appendChild(editBtn);
-        right.appendChild(clearBtn);
-        right.appendChild(upBtn);
-        right.appendChild(delBtn);
+function ordenarTabela(){ renderTabela(Object.values(pessoas).sort(function(a,b){ return b.total-a.total; })); }
 
-        chip.appendChild(left);
-        chip.appendChild(right);
-        listaFuncionariosEl.appendChild(chip);
-      });
-    }
+function exportCSV(){
+  var dados = Object.values(pessoas);
+  if(!dados.length){ toast("Sem dados.","error"); return; }
+  var rows = [["Nome","ID","Total (h:m:s)","Total (segundos)"]];
+  dados.forEach(function(p){ rows.push([p.nome, p.id, fmtHMS(p.total), p.total]); });
+  var csv = rows.map(function(r){ return r.map(function(c){ return '"'+c+'"'; }).join(","); }).join("\n");
+  var blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a"); a.href=url; a.download="horas_equipe.csv"; a.click();
+  URL.revokeObjectURL(url);
+  toast("CSV exportado!","success");
+}
 
-    function renderTabela(){
-      tabelaBodyEl.innerHTML="";
-      const dados = Object.values(pessoas);
-      if(dados.length===0){
-        tabelaBodyEl.innerHTML=`<tr><td colspan="4" class="muted">Sem registros.</td></tr>`;
-      } else {
-        dados.forEach(p=>{
-          const tr=document.createElement("tr");
-          tr.innerHTML=`<td>${p.nome}</td><td>${p.id}</td><td><span class="badge">${fmtHMS(p.total)}</span></td><td>${p.total}</td>`;
-          tabelaBodyEl.appendChild(tr);
-        });
-      }
-      renderRanking(dados);
-      renderRegistrosSelecionado();
-    }
-
-    function renderRanking(dados){
-      rankList.innerHTML="";
-      const top = [...dados].sort((a,b)=>b.total-a.total).slice(0,3);
-      if(top.length===0){
-        rankList.innerHTML=`<div class="muted">Sem dados para o ranking.</div>`;
-        return;
-      }
-      top.forEach((p,i)=>{
-        const item=document.createElement("div");
-        item.className="rank-item";
-        item.innerHTML=`<span class="rank-pos">${i+1}º</span><span>${p.nome}</span><span>${fmtHMS(p.total)}</span>`;
-        rankList.appendChild(item);
-      });
-    }
-
-    function renderRegistrosSelecionado(){
-      registrosArea.innerHTML="";
-      if(funcionarioSelecionado===null){
-        registrosArea.innerHTML=`<div class="muted">Selecione um funcionário para ver os registros.</div>`;
-        return;
-      }
-      const f=funcionarios[funcionarioSelecionado];
-      const chave=chavePessoa(f.nome,f.id);
-      const pessoa=pessoas[chave];
-
-      if(!pessoa || pessoa.registros.length===0){
-        registrosArea.innerHTML=`<div class="muted">Sem registros para ${f.nome}.</div>`;
-        return;
-      }
-
-      pessoa.registros.forEach(r=>{
-        const item=document.createElement("div");
-        item.className="reg-item";
-        const time=document.createElement("span");
-        time.className="time";
-        time.textContent=`${r.h}h ${r.m}m ${r.s}s`;
-
-        const remove=document.createElement("span");
-        remove.className="remove";
-        remove.textContent="Remover";
-        remove.title="Remover registro";
-        remove.dataset.id=r.id;
-        remove.addEventListener("click", async ()=>{
-          if(!isAdmin()) return alert("Indisponível para Convidado.");
-          if(!confirm("Tem certeza que deseja remover este registro?")) return;
-          await removerRegistro(r.id);
-        });
-
-        item.appendChild(time);
-        item.appendChild(remove);
-        registrosArea.appendChild(item);
-      });
-    }
-
-    // ---------- Donos e Gerentes (TOP) ----------
-    function renderResponsaveis(){
-      listaResponsaveisEl.innerHTML="";
-      if(!responsaveis || responsaveis.length===0){
-        listaResponsaveisEl.innerHTML = "<p class='muted'>Nenhum responsável cadastrado.</p>";
-        return;
-      }
-      responsaveis.forEach(r=>{
-        const chip=document.createElement("div");
-        chip.className="chip";
-        chip.title=`${r.nome} — ID: ${r.id_ref ?? "-"}`;
-
-        const left=document.createElement("div"); left.className="left";
-        const label=document.createElement("span"); label.className="label"; label.textContent=r.nome;
-        const sub=document.createElement("span"); sub.className="sub"; sub.textContent=`ID: ${r.id_ref ?? "-"}`;
-        left.appendChild(label); left.appendChild(sub);
-
-        const right=document.createElement("div"); right.className="right";
-        const cargo=document.createElement("span"); cargo.className=`badge ${r.cargo}`; cargo.textContent=r.cargo;
-
-        const remove=document.createElement("button");
-        remove.className="mini-btn red"; remove.textContent="Remover";
-        remove.addEventListener("click", async ()=>{
-          if(!isAdmin()) return alert("Indisponível para Convidado.");
-          await removerResponsavel(r.id);
-        });
-
-        right.appendChild(cargo);
-        right.appendChild(remove);
-        chip.appendChild(left);
-        chip.appendChild(right);
-        listaResponsaveisEl.appendChild(chip);
-      });
-    }
-
-    async function carregarResponsaveis(){
-      const { data, error } = await db.from("responsaveis").select("*").order("id",{ascending:true});
-      if(error){ console.error(error); showError("Erro ao carregar responsáveis."); responsaveis=[]; }
-      else { responsaveis = data || []; }
-      renderResponsaveis();
-    }
-
-    async function adicionarResponsavel(){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      const nome=(novoResponsavelNomeEl.value||"").trim();
-      const idref=(novoResponsavelIdEl.value||"").trim();
-      const cargo=(novoResponsavelCargoEl.value||"").trim();
-      if(!nome || !cargo){ alert("Informe nome e cargo!"); return; }
-
-      const payload = { nome, cargo, id_ref: idref || null };
-      const { error } = await db.from("responsaveis").insert([payload]);
-      if(error){ alert("Erro ao salvar responsável: " + error.message); return; }
-
-      novoResponsavelNomeEl.value="";
-      novoResponsavelIdEl.value="";
-      novoResponsavelCargoEl.value="Dono";
-      await carregarResponsaveis();
-    }
-
-    async function removerResponsavel(id){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      const { error } = await db.from("responsaveis").delete().eq("id", id);
-      if(error){ alert("Erro ao remover responsável: " + error.message); return; }
-      await carregarResponsaveis();
-    }
-
-    async function uparParaGerente(funcionario){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      const { data: existe, error: errCheck } = await db
-        .from("responsaveis").select("id")
-        .eq("id_ref", funcionario.id)
-        .eq("cargo", "Gerente")
-        .limit(1);
-      if(errCheck){ showError("Falha ao verificar responsáveis."); return; }
-      if(existe && existe.length>0){ alert("Este funcionário já está como Gerente."); return; }
-
-      const { error } = await db.from("responsaveis").insert([
-        { nome: funcionario.nome, id_ref: funcionario.id, cargo: "Gerente" }
-      ]);
-      if(error){ alert("Erro ao upar para Gerente: " + error.message); return; }
-      await carregarResponsaveis();
-    }
-
-    // ---------- Registros ----------
-    async function carregarFuncionarios(){
-      const { data, error } = await db.from("funcionarios").select("*").order("nome",{ascending:true});
-      if(error){ console.error(error); showError("Erro ao carregar funcionários."); return; }
-      funcionarios = data || [];
-      renderFuncionarios();
-    }
-
-    async function carregarRegistros(){
-      const { data, error } = await db.from("registros").select("*").order("id",{ascending:true});
-      if(error){ console.error(error); showError("Erro ao carregar registros."); return; }
-      const mapFunc = new Map(funcionarios.map(f=>[f.id,f.nome]));
-      pessoas = {};
-      (data||[]).forEach(r=>{
-        const nome = mapFunc.get(r.funcionario_id) || "(Desconhecido)";
-        const id = r.funcionario_id;
-        const chave = chavePessoa(nome,id);
-        if(!pessoas[chave]) pessoas[chave] = { nome, id, total: 0, registros: [] };
-        pessoas[chave].total += r.total;
-        pessoas[chave].registros.push({ id:r.id, h:r.horas, m:r.minutos, s:r.segundos, total:r.total });
-      });
-      renderTabela();
-    }
-
-    function selecionarFuncionario(idx){
-      funcionarioSelecionado=idx;
-      renderFuncionarios();
-      renderRegistrosSelecionado();
-    }
-
-    async function adicionarFuncionario(){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      const nome=(novoNomeEl.value||"").trim();
-      const id=(novoIdEl.value||"").trim();
-      if(!nome || !id){ alert("Informe nome e ID!"); return; }
-
-      const { data: existe, error: errCheck } = await db.from("funcionarios").select("id").eq("id",id).limit(1);
-      if(errCheck){ showError("Falha ao verificar duplicidade."); return; }
-      if(existe && existe.length>0){ alert("Já existe um funcionário com este ID."); return; }
-
-      const { error } = await db.from("funcionarios").insert([{ id, nome }]);
-      if(error){ alert("Erro ao salvar: " + error.message); return; }
-
-      novoNomeEl.value=""; novoIdEl.value="";
-      await carregarFuncionarios();
-      await carregarRegistros();
-    }
-
-    async function editarFuncionario(idx){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      const atual = funcionarios[idx];
-      const novoNome = prompt("Novo nome:", atual.nome);
-      if(novoNome===null) return;
-      const novoId = prompt("Novo ID:", atual.id);
-      if(novoId===null) return;
-
-      const nNome=(novoNome||"").trim();
-      const nId=(novoId||"").trim();
-      if(!nNome || !nId){ alert("Nome e ID não podem ficar vazios."); return; }
-
-      if(nId !== atual.id){
-        const { data: existe, error: errCheck } = await db.from("funcionarios").select("id").eq("id",nId).limit(1);
-        if(errCheck){ showError("Falha ao verificar duplicidade."); return; }
-        if(existe && existe.length>0){ alert("Já existe outro funcionário com este ID."); return; }
-      }
-
-      const { error: errFunc } = await db.from("funcionarios").update({ nome: nNome, id: nId }).eq("id", atual.id);
-      if(errFunc){ alert("Erro ao atualizar funcionário: " + errFunc.message); return; }
-
-      if(nId !== atual.id){
-        const { error: errRegs } = await db.from("registros").update({ funcionario_id: nId }).eq("funcionario_id", atual.id);
-        if(errRegs){ alert("Erro ao migrar registros: " + errRegs.message); return; }
-      }
-
-      await carregarFuncionarios();
-      await carregarRegistros();
-    }
-
-    async function removerFuncionario(idx){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      const f = funcionarios[idx];
-      if(!confirm(`Remover ${f.nome} (ID: ${f.id})? Isto apagará seus registros.`)) return;
-
-      const { error } = await db.from("funcionarios").delete().eq("id", f.id);
-      if(error){ alert("Erro ao remover funcionário: " + error.message); return; }
-
-      if(funcionarioSelecionado===idx) funcionarioSelecionado=null;
-      else if(typeof funcionarioSelecionado==="number" && funcionarioSelecionado>idx) funcionarioSelecionado-=1;
-
-      await carregarFuncionarios();
-      await carregarRegistros();
-    }
-
-    async function adicionarRegistro(){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      if(funcionarioSelecionado===null){ showError("Selecione um funcionário primeiro!"); return; }
-      const h=parseInt(horasEl.value||"0",10);
-      const m=parseInt(minutosEl.value||"0",10);
-      const s=parseInt(segundosEl.value||"0",10);
-
-      if(h===0 && m===0 && s===0){ showError("Não é permitido adicionar um registro em branco."); return; }
-      if([h,m,s].some(v=>Number.isNaN(v)||v<0)){ showError("Valores inválidos (>= 0)."); return; }
-      if(m>59 || s>59){ showError("Minutos/segundos devem estar entre 0 e 59."); return; }
-
-      const f = funcionarios[funcionarioSelecionado];
-      const total = toSeconds(h,m,s);
-
-      const { error } = await db.from("registros").insert([{ funcionario_id: f.id, horas: h, minutos: m, segundos: s, total }]);
-      if(error){ showError("Erro ao salvar registro: " + error.message); return; }
-
-      horasEl.value=""; minutosEl.value=""; segundosEl.value="";
-      await carregarRegistros();
-    }
-
-    async function removerRegistro(idRegistro){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      const { error } = await db.from("registros").delete().eq("id", idRegistro);
-      if(error){ alert("Erro ao remover registro: " + error.message); return; }
-      await carregarRegistros();
-    }
-
-    async function limparRegistrosFuncionario(funcionarioId, nome){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      if(!confirm(`Deseja limpar TODOS os registros de ${nome} (ID: ${funcionarioId})? Esta ação não pode ser desfeita.`)) return;
-      const { error } = await db.from("registros").delete().eq("funcionario_id", funcionarioId);
-      if(error){ alert("Erro ao limpar registros: " + error.message); return; }
-      await carregarRegistros();
-    }
-
-    async function limparRegistrosTodos(){
-      if(!isAdmin()) return alert("Indisponível para Convidado.");
-      if(!confirm("Deseja limpar TODOS os registros de TODOS os funcionários? Esta ação não pode ser desfeita.")) return;
-      const { error } = await db.from("registros").delete().neq("id", 0);
-      if(error){ alert("Erro ao limpar todos os registros: " + error.message); return; }
-      await carregarRegistros();
-    }
-
-    function ordenarTabela(){
-      const lista = Object.values(pessoas).sort((a,b)=>b.total - a.total);
-      tabelaBodyEl.innerHTML="";
-      if(lista.length===0){
-        tabelaBodyEl.innerHTML=`<tr><td colspan="4" class="muted">Sem registros.</td></tr>`;
-      } else {
-        lista.forEach(p=>{
-          const tr=document.createElement("tr");
-          tr.innerHTML=`<td>${p.nome}</td><td>${p.id}</td><td><span class="badge">${fmtHMS(p.total)}</span></td><td>${p.total}</td>`;
-          tabelaBodyEl.appendChild(tr);
-        });
-      }
-      renderRanking(lista);
-    }
-
-    // Eventos
-    document.getElementById("btnAddFuncionario").addEventListener("click", adicionarFuncionario);
-    document.getElementById("btnAddRegistro").addEventListener("click", adicionarRegistro);
-    document.getElementById("btnOrdenar").addEventListener("click", ordenarTabela);
-    document.getElementById("btnLimparTodos").addEventListener("click", limparRegistrosTodos);
-    document.getElementById("btnAddResponsavel").addEventListener("click", adicionarResponsavel);
-
-    // Init somente após login (observa quando appRoot fica visível)
-    const observer = new MutationObserver(async ()=>{
-      const visible = document.getElementById("appRoot").style.display !== "none";
-      if(visible){
-        await carregarFuncionarios();
-        await carregarRegistros();
-        await carregarResponsaveis();
-        observer.disconnect();
-      }
-    });
-    observer.observe(document.getElementById("appRoot"), { attributes:true, attributeFilter:["style"] });
-  </script>
+document.getElementById("searchFuncionario").addEventListener("input", function(){ renderFuncionarios(); });
+document.getElementById("btnAddFuncionario").onclick = adicionarFuncionario;
+document.getElementById("btnAddRegistro").onclick    = adicionarRegistro;
+document.getElementById("btnOrdenar").onclick        = ordenarTabela;
+document.getElementById("btnLimparTodos").onclick    = limparRegistrosTodos;
+document.getElementById("btnAddResponsavel").onclick = adicionarResponsavel;
+document.getElementById("btnExportCSV").onclick      = exportCSV;
+</script>
 </body>
 </html>
