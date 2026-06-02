@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
-<title>HoraTrack</title>
+<title>The Town Casino</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -21,15 +21,15 @@ const db=window.__sb;
 </script>
 <style>
 :root{
-  --bg:#080a0e;--bg2:#0d1117;--bg3:#141922;
-  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-  --text:#e8ecf1;--muted:#6b7685;--muted2:#8a95a3;
-  --accent:#4f8fff;--accent2:#3a6fd4;
+  --bg:#0a0710;--bg2:#100d1a;--bg3:#16112a;
+  --border:rgba(168,85,247,0.15);--border2:rgba(168,85,247,0.25);
+  --text:#f0ecff;--muted:#7a6e8a;--muted2:#9d93b0;
+  --accent:#a855f7;--accent2:#9333ea;
   --green:#22c55e;--green2:#16a34a;
   --red:#ef4444;--orange:#f59e0b;--gold:#fbbf24;--purple:#a855f7;
   --radius:10px;--radius2:14px;
 }
-body.light{--bg:#f0f2f5;--bg2:#fff;--bg3:#f5f6f8;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);--text:#1a1d23;--muted:#8a95a3;--muted2:#6b7685;}
+body.light{--bg:#f5f0ff;--bg2:#fff;--bg3:#f8f4ff;--border:rgba(168,85,247,0.12);--border2:rgba(168,85,247,0.2);--text:#1a1023;--muted:#9d93b0;--muted2:#7a6e8a;}
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100%;overflow-x:hidden;}
 /* TOAST */
@@ -67,7 +67,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 #loginScreen{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:20px;}
 .login-wrap{width:100%;max-width:420px;}
 .login-logo{text-align:center;margin-bottom:24px;}
-.logo-icon{width:62px;height:62px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;box-shadow:0 4px 24px rgba(79,143,255,.3);}
+.logo-icon{width:62px;height:62px;border-radius:16px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;box-shadow:0 4px 24px rgba(168,85,247,.45);}
 .login-logo h1{font-size:24px;font-weight:600;}
 .login-logo p{font-size:13px;color:var(--muted2);margin-top:4px;}
 .login-tabs{display:flex;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius2);padding:4px;margin-bottom:14px;}
@@ -92,8 +92,10 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 .login-err{color:var(--red);font-size:12px;margin-top:8px;text-align:center;min-height:18px;}
 /* TOPBAR */
 .topbar{padding:0 18px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;height:52px;flex-shrink:0;position:sticky;top:0;z-index:200;}
-.topbar-logo{font-size:15px;font-weight:600;margin-right:4px;}
-.topbar-logo span{color:var(--accent);}
+.topbar-logo{font-size:15px;font-weight:700;margin-right:4px;letter-spacing:.02em;}
+.topbar-logo .casino-the{color:var(--muted2);font-weight:400;font-size:13px;}
+.topbar-logo .casino-town{color:#fff;font-weight:800;font-size:16px;letter-spacing:.05em;}
+.topbar-logo .casino-word{color:var(--accent);font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase;}
 .topbar-nav{display:flex;gap:2px;flex:1;overflow-x:auto;}
 .topbar-nav::-webkit-scrollbar{display:none;}
 .nav-btn{padding:6px 13px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;background:transparent;color:var(--muted2);transition:all .15s;white-space:nowrap;position:relative;}
@@ -193,8 +195,8 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 .add-mng-form input,.add-mng-form select{padding:6px 9px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;outline:none;flex:1;min-width:90px;}
 .add-mng-form input:focus,.add-mng-form select:focus{border-color:var(--accent);}
 /* CALC LAYOUT */
-.calc-layout{display:flex;height:calc(100vh - 52px);}
-.sidebar{width:265px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.calc-layout{display:flex;height:calc(100vh - 52px);overflow:hidden;}
+.sidebar{width:290px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 .sidebar-header{padding:12px 13px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .sidebar-header h3{font-size:13px;font-weight:600;}
 .sidebar-count{font-size:11px;background:var(--bg3);border:1px solid var(--border);padding:2px 7px;border-radius:12px;color:var(--muted2);}
@@ -210,7 +212,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-seri
 .func-avatar img{width:100%;height:100%;object-fit:cover;border-radius:7px;}
 .func-item.selected .func-avatar{background:rgba(79,143,255,.2);border-color:rgba(79,143,255,.4);}
 .func-info{flex:1;min-width:0;}
-.func-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.func-name{font-size:13px;font-weight:500;white-space:normal;word-break:break-word;line-height:1.3;}
 .func-id{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
 .func-actions{display:flex;gap:2px;opacity:0;transition:opacity .15s;}
 .func-item:hover .func-actions{opacity:1;}
@@ -261,7 +263,7 @@ tbody tr:last-child{border-bottom:none;}
 tbody tr.row-ausente{background:rgba(239,68,68,.03);}
 tbody tr.row-ausente:hover{background:rgba(239,68,68,.07);}
 td{padding:8px 10px;font-size:13px;}
-.td-name{font-weight:500;}
+.td-name{font-weight:500;white-space:normal;word-break:break-word;min-width:120px;}
 .td-id{font-family:'JetBrains Mono',monospace;color:var(--muted2);font-size:12px;}
 .td-hms{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--accent);}
 .td-sec{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
@@ -340,6 +342,57 @@ td{padding:8px 10px;font-size:13px;}
   .clock{font-size:38px;}
   .dash-row2{grid-template-columns:1fr;}
 }
+
+/* CONSULTA */
+.consulta-body{padding:18px;display:flex;flex-direction:column;gap:13px;}
+.consulta-filters{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+.cf-field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px;}
+.cf-field label{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.04em;}
+.cf-field input,.cf-field select{padding:8px 10px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:8px;font-family:inherit;font-size:13px;outline:none;transition:border-color .15s;width:100%;}
+.cf-field input:focus,.cf-field select:focus{border-color:var(--accent);}
+.consulta-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;}
+.cs-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:12px 14px;text-align:center;}
+.cs-val{font-size:22px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--accent);}
+.cs-label{font-size:10px;color:var(--muted2);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;}
+.consulta-table-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:14px;}
+.consulta-reg-list{display:flex;flex-direction:column;gap:5px;max-height:420px;overflow-y:auto;margin-top:10px;}
+.creg-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px;}
+.creg-avatar{width:30px;height:30px;border-radius:7px;background:var(--bg);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--accent);flex-shrink:0;overflow:hidden;}
+.creg-avatar img{width:100%;height:100%;object-fit:cover;border-radius:6px;}
+.creg-info{flex:1;min-width:0;}
+.creg-nome{font-size:13px;font-weight:500;}
+.creg-time{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--accent);}
+.creg-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.creg-nota{font-size:11px;color:var(--muted2);font-style:italic;margin-top:1px;}
+.creg-date{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+.group-header{display:flex;align-items:center;justify-content:space-between;padding:6px 4px;margin-top:8px;margin-bottom:3px;border-bottom:1px solid var(--border);}
+.group-nome{font-size:13px;font-weight:600;}
+.group-total{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);}
+
+/* CASINO THEME EXTRAS */
+.topbar{background:linear-gradient(90deg,#0d0a1a,#160f2e,#0d0a1a);border-bottom:1px solid rgba(168,85,247,.3);}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(168,85,247,.6),rgba(251,191,36,.4),rgba(168,85,247,.6),transparent);}
+.topbar{position:relative;}
+#loginScreen{background:radial-gradient(ellipse at 50% 0%,#1a0d35 0%,#0a0710 60%);}
+.login-card{border-color:rgba(168,85,247,.25);box-shadow:0 0 40px rgba(168,85,247,.1);}
+.login-tabs{background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.2);}
+.btn-lmain.accent{background:linear-gradient(135deg,#7c3aed,#a855f7);box-shadow:0 4px 15px rgba(168,85,247,.35);}
+.btn-lmain.green{background:linear-gradient(135deg,#16a34a,#22c55e);box-shadow:0 4px 15px rgba(34,197,94,.25);}
+.dash-card{border-color:rgba(168,85,247,.15);}
+.dash-card.c-accent::before{background:linear-gradient(180deg,var(--gold),var(--accent));}
+.stat-card{border-color:rgba(168,85,247,.12);}
+.card,.hist-card,.aus-hist-card{border-color:rgba(168,85,247,.12);}
+.func-item.selected{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.35);}
+.func-item.selected .func-avatar{background:rgba(168,85,247,.2);border-color:rgba(168,85,247,.45);}
+.ponto-btn.iniciar{background:linear-gradient(135deg,#16a34a,#22c55e);box-shadow:0 4px 15px rgba(34,197,94,.2);}
+.ponto-btn.encerrar{background:linear-gradient(135deg,#dc2626,#ef4444);}
+.ponto-btn.retomar{background:linear-gradient(135deg,#7c3aed,#a855f7);}
+.btn.green{background:linear-gradient(135deg,#16a34a,#22c55e);}
+.btn.purple{background:linear-gradient(135deg,#7c3aed,#a855f7);}
+.rank-card.pos1{border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.06);}
+.rank-card.pos1 .rank-time{color:var(--gold);}
+.managers-bar{background:linear-gradient(90deg,#0d0a1a,#110d22,#0d0a1a);border-bottom-color:rgba(168,85,247,.25);}
+
 </style>
 </head>
 <body>
@@ -395,9 +448,9 @@ td{padding:8px 10px;font-size:13px;}
 <div id="loginScreen">
   <div class="login-wrap">
     <div class="login-logo">
-      <div class="logo-icon">⏱</div>
-      <h1>HoraTrack</h1>
-      <p>Sistema de controle de horas</p>
+      <div class="logo-icon">🎰</div>
+      <h1>The Town Casino</h1>
+      <p>Staff Hours Management</p>
     </div>
     <div class="login-tabs">
       <button class="login-tab active" id="tabFuncionario" onclick="switchTab('Funcionario')">👤 Funcionário</button>
@@ -427,7 +480,7 @@ td{padding:8px 10px;font-size:13px;}
 <!-- APP -->
 <div id="appRoot">
   <div class="topbar">
-    <div class="topbar-logo">⏱ <span>HoraTrack</span></div>
+    <div class="topbar-logo"><span class="casino-the">The </span><span class="casino-town">Town</span> <span class="casino-word">Casino</span></div>
     <nav class="topbar-nav" id="topbarNav"></nav>
     <div class="topbar-right">
       <button class="theme-btn" id="themeBtn">🌙</button>
@@ -612,6 +665,65 @@ td{padding:8px 10px;font-size:13px;}
       </div>
     </div>
   </div>
+
+  <!-- CONSULTA DE HORAS -->
+  <div class="page" id="pageConsulta">
+    <div class="consulta-body">
+
+      <!-- Filtros -->
+      <div class="consulta-filters">
+        <div class="cf-field">
+          <label>De</label>
+          <input type="date" id="consultaDe">
+        </div>
+        <div class="cf-field">
+          <label>Até</label>
+          <input type="date" id="consultaAte">
+        </div>
+        <div class="cf-field">
+          <label>Funcionário</label>
+          <select id="consultaFunc"><option value="">Todos</option></select>
+        </div>
+        <div class="cf-field">
+          <label>Agrupar por</label>
+          <select id="consultaGrupo">
+            <option value="func">Funcionário</option>
+            <option value="dia">Dia</option>
+            <option value="nenhum">Sem agrupamento</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;">
+          <button class="btn green" id="btnConsultar">🔍 Consultar</button>
+          <button class="btn ghost" id="btnConsultaCSV" style="font-size:12px;">⬇ CSV</button>
+          <button class="btn purple" id="btnConsultaPDF" style="font-size:12px;">📄 PDF</button>
+          <button class="btn ghost" id="btnConsultaHoje" style="font-size:12px;">Hoje</button>
+          <button class="btn ghost" id="btnConsultaSemana" style="font-size:12px;">Semana</button>
+          <button class="btn ghost" id="btnConsultaMes" style="font-size:12px;">Mês</button>
+        </div>
+      </div>
+
+      <!-- Resumo -->
+      <div class="consulta-summary">
+        <div class="cs-card"><div class="cs-val" id="csTotal">—</div><div class="cs-label">Horas no período</div></div>
+        <div class="cs-card"><div class="cs-val" id="csRegistros">0</div><div class="cs-label">Registros</div></div>
+        <div class="cs-card"><div class="cs-val" id="csFuncs">0</div><div class="cs-label">Funcionários</div></div>
+        <div class="cs-card"><div class="cs-val" id="csMedia">—</div><div class="cs-label">Média por funcionário</div></div>
+      </div>
+
+      <!-- Resultados -->
+      <div class="consulta-table-card">
+        <div class="card-header">
+          <div class="card-title">Resultados</div>
+          <span class="card-sub" id="consultaRangeLabel">—</span>
+        </div>
+        <div class="consulta-reg-list" id="consultaResultados">
+          <div class="empty-state"><div class="empty-icon">🔍</div><p>Use os filtros acima e clique em Consultar.</p></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div><!-- /appRoot -->
 
 <script>
@@ -800,10 +912,10 @@ function iniciarApp(r, func) {
 function buildNav(r) {
   const nav = document.getElementById("topbarNav"); nav.innerHTML = "";
   const pages = r==="func"
-    ? [["Dash","🏠 Início"],["Ponto","🕐 Ponto"],["Ausencia","⚠ Ausência"]]
+    ? [["Dash","🏠 Início"],["Ponto","🕐 Ponto"],["Consulta","🔍 Consulta"],["Ausencia","⚠ Ausência"]]
     : r==="admin"
-    ? [["Dash","🏠 Início"],["Ponto","🕐 Ponto"],["Calc","📊 Calculadora"],["Relat","📈 Relatórios"],["Ausencia","⚠ Ausências"]]
-    : [["Dash","🏠 Início"],["Calc","📊 Calculadora"],["Relat","📈 Relatórios"],["Ausencia","⚠ Ausências"]];
+    ? [["Dash","🏠 Início"],["Ponto","🕐 Ponto"],["Calc","📊 Calculadora"],["Relat","📈 Relatórios"],["Consulta","🔍 Consulta"],["Ausencia","⚠ Ausências"]]
+    : [["Dash","🏠 Início"],["Calc","📊 Calculadora"],["Relat","📈 Relatórios"],["Consulta","🔍 Consulta"],["Ausencia","⚠ Ausências"]];
   pages.forEach(item => {
     const b = document.createElement("button");
     b.className = "nav-btn"; b.textContent = item[1]; b.dataset.page = item[0];
@@ -818,6 +930,7 @@ function showPage(page) {
   if(pg) pg.classList.add("active");
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page===page));
   if(page==="Ausencia") { popularSelectsFunc(); carregarAusencias(); }
+  if(page==="Consulta") { popularConsultaFunc(); }
   if(page==="Relat")    { popularRelatFunc(); gerarRelatorio(); }
   if(page==="Dash")     renderDash();
 }
@@ -1343,8 +1456,8 @@ function exportCSV() {
 
 function exportPDF() {
   const dados=Object.values(pessoas).sort((a,b)=>b.total-a.total);
-  let html="<html><head><meta charset='UTF-8'><title>HoraTrack</title><style>body{font-family:Arial;padding:20px;}h1{color:#4f8fff;}table{width:100%;border-collapse:collapse;}th,td{padding:8px 12px;border:1px solid #ddd;text-align:left;}th{background:#f0f4ff;}</style></head><body>";
-  html+="<h1>⏱ HoraTrack — Relatório</h1><p>Gerado em: "+new Date().toLocaleString("pt-BR")+"</p><table><thead><tr><th>#</th><th>Nome</th><th>ID</th><th>Horas</th><th>Segundos</th></tr></thead><tbody>";
+  let html="<html><head><meta charset='UTF-8'><title>The Town Casino</title><style>body{font-family:Arial;padding:20px;}h1{color:#4f8fff;}table{width:100%;border-collapse:collapse;}th,td{padding:8px 12px;border:1px solid #ddd;text-align:left;}th{background:#f0f4ff;}</style></head><body>";
+  html+="<h1>🎰 The Town Casino — Relatório</h1><p>Gerado em: "+new Date().toLocaleString("pt-BR")+"</p><table><thead><tr><th>#</th><th>Nome</th><th>ID</th><th>Horas</th><th>Segundos</th></tr></thead><tbody>";
   dados.forEach((p,i)=>{ html+="<tr><td>"+(i+1)+"</td><td>"+p.nome+"</td><td>"+p.id+"</td><td>"+fmtHMS(p.total)+"</td><td>"+p.total+"</td></tr>"; });
   html+="</tbody></table></body></html>";
   const win=window.open("","_blank"); win.document.write(html); win.document.close(); win.print();
@@ -1418,7 +1531,7 @@ async function gerarRelatorio() {
 document.getElementById("btnGerarRelat").onclick = gerarRelatorio;
 document.getElementById("btnRelatPDF").onclick = () => {
   const tbody=document.getElementById("relatTableBody").innerHTML;
-  const html="<html><head><meta charset='UTF-8'><title>Relatório</title><style>body{font-family:Arial;padding:20px;}h1{color:#4f8fff;}table{width:100%;border-collapse:collapse;}th,td{padding:8px 12px;border:1px solid #ddd;text-align:left;}th{background:#f0f4ff;}</style></head><body><h1>⏱ HoraTrack — Relatório</h1><p>Gerado em: "+new Date().toLocaleString("pt-BR")+"</p><table><thead><tr><th>Funcionário</th><th>Horas</th><th>Registros</th><th>Ausências</th><th>Meta</th></tr></thead><tbody>"+tbody+"</tbody></table></body></html>";
+  const html="<html><head><meta charset='UTF-8'><title>Relatório</title><style>body{font-family:Arial;padding:20px;}h1{color:#4f8fff;}table{width:100%;border-collapse:collapse;}th,td{padding:8px 12px;border:1px solid #ddd;text-align:left;}th{background:#f0f4ff;}</style></head><body><h1>🎰 The Town Casino — Relatório</h1><p>Gerado em: "+new Date().toLocaleString("pt-BR")+"</p><table><thead><tr><th>Funcionário</th><th>Horas</th><th>Registros</th><th>Ausências</th><th>Meta</th></tr></thead><tbody>"+tbody+"</tbody></table></body></html>";
   const win=window.open("","_blank"); win.document.write(html); win.document.close(); win.print();
 };
 
@@ -1500,6 +1613,222 @@ async function removerAusencia(id) {
   try { await db.from("ausencias").delete().eq("id",id); toast("Removido.","info"); await carregarAusencias(); renderDash(); }
   finally { setLoading(false); }
 }
+
+
+// ═══════════════════════════════════════
+// CONSULTA DE HORAS
+// ═══════════════════════════════════════
+let consultaData = [];
+
+function popularConsultaFunc() {
+  const sel = document.getElementById("consultaFunc");
+  if(!sel) return;
+  const val = sel.value;
+  sel.innerHTML = "<option value=''>Todos</option>";
+  funcionarios.forEach(f => {
+    const o = document.createElement("option"); o.value=f.id; o.textContent=f.nome+" (#"+f.id+")"; sel.appendChild(o);
+  });
+  if(val) sel.value = val;
+}
+
+function setConsultaRange(tipo) {
+  const hoje = new Date();
+  let de, ate;
+  if(tipo==="hoje") {
+    de = ate = todayISO();
+  } else if(tipo==="semana") {
+    const dow = hoje.getDay(), diff = dow===0?6:dow-1;
+    const seg = new Date(hoje); seg.setDate(hoje.getDate()-diff);
+    de  = seg.toISOString().split("T")[0];
+    ate = todayISO();
+  } else if(tipo==="mes") {
+    de  = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split("T")[0];
+    ate = todayISO();
+  }
+  document.getElementById("consultaDe").value  = de;
+  document.getElementById("consultaAte").value = ate;
+}
+
+// Set default range on load (current month)
+(function(){
+  const hoje = new Date();
+  document.getElementById("consultaDe").value  = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split("T")[0];
+  document.getElementById("consultaAte").value = todayISO();
+})();
+
+async function executarConsulta() {
+  const de        = document.getElementById("consultaDe").value;
+  const ate       = document.getElementById("consultaAte").value;
+  const funcId    = document.getElementById("consultaFunc").value;
+  const grupo     = document.getElementById("consultaGrupo").value;
+
+  if(!de || !ate) { toast("Informe as datas.", "error"); return; }
+  if(de > ate)    { toast("Data inicial maior que final.", "error"); return; }
+
+  // Build date range — add 1 day to 'ate' to include the full day
+  const ateNext = new Date(ate); ateNext.setDate(ateNext.getDate()+1);
+  const ateStr  = ateNext.toISOString().split("T")[0];
+
+  setLoading(true);
+  try {
+    let query = db.from("registros").select("*")
+      .gte("created_at", de+"T00:00:00.000Z")
+      .lt("created_at",  ateStr+"T00:00:00.000Z")
+      .order("created_at", {ascending:true});
+    if(funcId) query = query.eq("funcionario_id", funcId);
+
+    const res = await query;
+    if(res.error) { toast("Erro ao consultar: "+res.error.message, "error"); return; }
+    consultaData = res.data||[];
+    renderConsulta(grupo, de, ate);
+  } finally { setLoading(false); }
+}
+
+function renderConsulta(grupo, de, ate) {
+  const el = document.getElementById("consultaResultados");
+  const rangeEl = document.getElementById("consultaRangeLabel");
+
+  const fmtD = d => new Date(d+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
+  rangeEl.textContent = fmtD(de) + " → " + fmtD(ate);
+
+  // Summary
+  const totalSec  = consultaData.reduce((a,r)=>a+r.total,0);
+  const funcsSet  = new Set(consultaData.map(r=>r.funcionario_id));
+  const media     = funcsSet.size > 0 ? Math.round(totalSec/funcsSet.size) : 0;
+
+  document.getElementById("csTotal").textContent     = fmtHMS(totalSec);
+  document.getElementById("csRegistros").textContent = consultaData.length;
+  document.getElementById("csFuncs").textContent     = funcsSet.size;
+  document.getElementById("csMedia").textContent     = funcsSet.size>0 ? fmtHMS(media) : "—";
+
+  el.innerHTML = "";
+
+  if(!consultaData.length) {
+    el.innerHTML = "<div class='empty-state'><div class='empty-icon'>🔍</div><p>Nenhum registro no período.</p></div>";
+    return;
+  }
+
+  const mapFunc = new Map(funcionarios.map(f=>[f.id,f]));
+
+  if(grupo === "func") {
+    // Group by funcionário
+    const groups = {};
+    consultaData.forEach(r => {
+      if(!groups[r.funcionario_id]) groups[r.funcionario_id] = {registros:[], total:0};
+      groups[r.funcionario_id].registros.push(r);
+      groups[r.funcionario_id].total += r.total;
+    });
+    Object.entries(groups).sort((a,b)=>b[1].total-a[1].total).forEach(([fid, g]) => {
+      const f = mapFunc.get(fid);
+      const nome = f ? f.nome : fid;
+
+      // Group header
+      const gh = document.createElement("div"); gh.className = "group-header";
+      const avHtml = f&&f.avatar ? "<img src='"+f.avatar+"' style='width:100%;height:100%;object-fit:cover;border-radius:6px;'>" : initials(nome);
+      gh.innerHTML = "<div style='display:flex;align-items:center;gap:8px;'>"
+        +"<div class='creg-avatar'>"+avHtml+"</div>"
+        +"<span class='group-nome'>"+nome+"</span>"
+        +"<span style='font-size:11px;color:var(--muted);'>("+g.registros.length+" registros)</span>"
+        +"</div>"
+        +"<span class='group-total'>"+fmtHMS(g.total)+"</span>";
+      el.appendChild(gh);
+
+      g.registros.forEach(r => el.appendChild(buildRegItem(r, f, false)));
+    });
+
+  } else if(grupo === "dia") {
+    // Group by day
+    const groups = {};
+    consultaData.forEach(r => {
+      const dia = r.created_at ? r.created_at.split("T")[0] : "desconhecido";
+      if(!groups[dia]) groups[dia] = {registros:[], total:0};
+      groups[dia].registros.push(r);
+      groups[dia].total += r.total;
+    });
+    Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([dia, g]) => {
+      const gh = document.createElement("div"); gh.className = "group-header";
+      const diaFmt = new Date(dia+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
+      gh.innerHTML = "<span class='group-nome'>"+diaFmt+"</span><span class='group-total'>"+fmtHMS(g.total)+" — "+g.registros.length+" reg.</span>";
+      el.appendChild(gh);
+      g.registros.forEach(r => {
+        const f = mapFunc.get(r.funcionario_id);
+        el.appendChild(buildRegItem(r, f, true));
+      });
+    });
+
+  } else {
+    // No grouping
+    consultaData.forEach(r => {
+      const f = mapFunc.get(r.funcionario_id);
+      el.appendChild(buildRegItem(r, f, true));
+    });
+  }
+}
+
+function buildRegItem(r, f, showName) {
+  const item = document.createElement("div"); item.className = "creg-item";
+  const nome = f ? f.nome : r.funcionario_id;
+  const avHtml = f&&f.avatar ? "<img src='"+f.avatar+"' style='width:100%;height:100%;object-fit:cover;border-radius:6px;'>" : initials(nome);
+  const dateStr = r.created_at ? fmtDate(r.created_at) : "—";
+  item.innerHTML = (showName ? "<div class='creg-avatar'>"+avHtml+"</div>" : "")
+    +"<div class='creg-info'>"
+    +(showName ? "<div class='creg-nome'>"+nome+"</div>" : "")
+    +"<div class='creg-time'>"+r.horas+"h "+r.minutos+"m "+r.segundos+"s</div>"
+    +(r.nota ? "<div class='creg-nota'>"+r.nota+"</div>" : "")
+    +"</div>"
+    +"<div class='creg-date'>"+dateStr+"</div>";
+  return item;
+}
+
+function exportConsultaCSV() {
+  if(!consultaData.length) { toast("Sem dados para exportar.","error"); return; }
+  const mapFunc = new Map(funcionarios.map(f=>[f.id,f.nome]));
+  const rows = [["Funcionário","ID","Horas","Minutos","Segundos","Total (h:m:s)","Segundos","Nota","Data"]];
+  consultaData.forEach(r => {
+    rows.push([
+      mapFunc.get(r.funcionario_id)||r.funcionario_id,
+      r.funcionario_id,
+      r.horas, r.minutos, r.segundos,
+      fmtHMS(r.total), r.total,
+      r.nota||"",
+      r.created_at ? r.created_at.split("T")[0] : ""
+    ]);
+  });
+  const csv = rows.map(row=>row.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+  a.download = "consulta_horas.csv"; a.click();
+  toast("CSV exportado!","success");
+}
+
+function exportConsultaPDF() {
+  if(!consultaData.length) { toast("Sem dados.","error"); return; }
+  const mapFunc = new Map(funcionarios.map(f=>[f.id,f.nome]));
+  const de  = document.getElementById("consultaDe").value;
+  const ate = document.getElementById("consultaAte").value;
+  const totalSec = consultaData.reduce((a,r)=>a+r.total,0);
+  let rows = "";
+  consultaData.forEach((r,i) => {
+    rows += "<tr><td>"+(i+1)+"</td><td>"+(mapFunc.get(r.funcionario_id)||r.funcionario_id)+"</td>"
+      +"<td>"+fmtHMS(r.total)+"</td><td>"+(r.nota||"—")+"</td>"
+      +"<td>"+(r.created_at?r.created_at.split("T")[0]:"—")+"</td></tr>";
+  });
+  const html = "<html><head><meta charset='UTF-8'><title>Consulta HoraTrack</title>"
+    +"<style>body{font-family:Arial;padding:20px;}h1{color:#4f8fff;}table{width:100%;border-collapse:collapse;}th,td{padding:8px 12px;border:1px solid #ddd;text-align:left;}th{background:#f0f4ff;}.total{margin-top:14px;font-size:16px;font-weight:bold;}</style></head><body>"
+    +"<h1>🎰 The Town Casino — Consulta de Horas</h1>"
+    +"<p>Período: <strong>"+de+" → "+ate+"</strong> &nbsp;|&nbsp; Total: <strong>"+fmtHMS(totalSec)+"</strong></p>"
+    +"<p>Gerado em: "+new Date().toLocaleString("pt-BR")+"</p>"
+    +"<table><thead><tr><th>#</th><th>Funcionário</th><th>Horas</th><th>Nota</th><th>Data</th></tr></thead><tbody>"
+    +rows+"</tbody></table></body></html>";
+  const win = window.open("","_blank"); win.document.write(html); win.document.close(); win.print();
+}
+
+document.getElementById("btnConsultar").onclick    = executarConsulta;
+document.getElementById("btnConsultaCSV").onclick  = exportConsultaCSV;
+document.getElementById("btnConsultaPDF").onclick  = exportConsultaPDF;
+document.getElementById("btnConsultaHoje").onclick   = () => { setConsultaRange("hoje");   executarConsulta(); };
+document.getElementById("btnConsultaSemana").onclick = () => { setConsultaRange("semana"); executarConsulta(); };
+document.getElementById("btnConsultaMes").onclick    = () => { setConsultaRange("mes");    executarConsulta(); };
 
 // ─── EVENT BINDINGS ───
 document.getElementById("searchFunc").addEventListener("input", () => renderFuncs());
